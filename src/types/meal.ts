@@ -21,6 +21,7 @@ export interface CraftingInputValues {
   premium: boolean
   focus: boolean
   cityBonus: boolean
+  craftQuantity: string
 }
 
 export interface MealConfig {

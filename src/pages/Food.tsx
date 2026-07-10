@@ -29,6 +29,7 @@ export default function Food() {
   const [premium, setPremium] = useState(false)
   const [focus, setFocus] = useState(false)
   const [cityBonus, setCityBonus] = useState(false)
+  const [craftQuantity, setCraftQuantity] = useState('')
   const [spects, setSpects] = useState<Record<string, number>>({
     cook: 0,
     butchering: 0,
@@ -46,7 +47,7 @@ export default function Food() {
 
   const loadedRef = useRef(false)
   const stateRef = useRef({
-    spects, stationCost, returnPercent, taxes, premium, focus, cityBonus,
+    spects, stationCost, returnPercent, taxes, premium, focus, cityBonus, craftQuantity,
     baseName: null as string | null,
     baseMaterials: [] as CraftMaterial[],
     enchantmentMaterials: {} as Record<number, CraftMaterial[]>,
@@ -54,7 +55,7 @@ export default function Food() {
 
   useEffect(() => {
     stateRef.current = {
-      spects, stationCost, returnPercent, taxes, premium, focus, cityBonus,
+      spects, stationCost, returnPercent, taxes, premium, focus, cityBonus, craftQuantity,
       baseName, baseMaterials, enchantmentMaterials,
     }
   })
@@ -68,6 +69,7 @@ export default function Food() {
     setPremium(config.craftingInputs.premium)
     setFocus(config.craftingInputs.focus)
     setCityBonus(config.craftingInputs.cityBonus)
+    setCraftQuantity(config.craftingInputs.craftQuantity)
   }, [])
 
   useEffect(() => {
@@ -94,7 +96,7 @@ export default function Food() {
     const config: AppConfig = {
       meals: {},
       spects,
-      craftingInputs: { stationCost, returnPercent, taxes, premium, focus, cityBonus },
+      craftingInputs: { stationCost, returnPercent, taxes, premium, focus, cityBonus, craftQuantity },
     }
     const existing = loadConfig()
     config.meals = { ...existing.meals }
@@ -102,7 +104,7 @@ export default function Food() {
       config.meals[baseName] = { baseName, baseMaterials, enchantmentMaterials }
     }
     saveConfig(config)
-  }, [spects, stationCost, returnPercent, taxes, premium, focus, cityBonus, baseName, baseMaterials, enchantmentMaterials])
+  }, [spects, stationCost, returnPercent, taxes, premium, focus, cityBonus, craftQuantity, baseName, baseMaterials, enchantmentMaterials])
 
   useEffect(() => {
     loadedRef.current = true
@@ -187,7 +189,7 @@ export default function Food() {
   function handleSave() {
     const config = loadConfig()
     config.spects = spects
-    config.craftingInputs = { stationCost, returnPercent, taxes, premium, focus, cityBonus }
+    config.craftingInputs = { stationCost, returnPercent, taxes, premium, focus, cityBonus, craftQuantity }
     if (baseName) {
       config.meals[baseName] = { baseName, baseMaterials, enchantmentMaterials }
     }
@@ -207,6 +209,7 @@ export default function Food() {
         premium: s.premium,
         focus: s.focus,
         cityBonus: s.cityBonus,
+        craftQuantity: s.craftQuantity,
       }
       if (s.baseName) {
         config.meals[s.baseName] = {
@@ -241,20 +244,20 @@ export default function Food() {
 
         {selectedMeal && displayedMeal ? (
           <>
-            <div className="flex flex-wrap gap-6">
-              <div className="space-y-4">
+            <div className="flex flex-wrap gap-6 justify-center">
+              <div className="space-y-4 items-center">
                 <EnchantmentSelector
                   available={availableEnchantments}
                   selected={selectedEnchantment}
                   onSelect={handleEnchantmentSelect}
                 />
-                <div className="flex flex-wrap gap-4">
+                <div className="flex flex-wrap gap-4 justify-center">
                   <FoodCard meal={displayedMeal} />
                   <FoodMaterials materials={displayedMaterials} />
                 </div>
               </div>
 
-              <div className="flex-1 min-w-56">
+              <div className="min-w-56">
                 <CraftingInputs
                   stationCost={stationCost}
                   returnPercent={returnPercent}
@@ -262,10 +265,15 @@ export default function Food() {
                   premium={premium}
                   focus={focus}
                   cityBonus={cityBonus}
+                  craftQuantity={craftQuantity}
+                  focusUsed=""
+                  inversionNecesaria=""
+                  beneficio=""
                   onStationCostChange={setStationCost}
                   onPremiumChange={setPremium}
                   onFocusChange={setFocus}
                   onCityBonusChange={setCityBonus}
+                  onCraftQuantityChange={setCraftQuantity}
                 />
               </div>
             </div>

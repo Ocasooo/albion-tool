@@ -14,19 +14,17 @@ export default function MaterialInputs({ title, materials, compact = false, onCh
     <div className="space-y-3">
       {title && <h4 className="text-sm font-semibold text-slate-300">{title}</h4>}
 
-      {!compact && (
-        <div className="flex gap-2 items-end">
-          <div className="w-32">
-            <span className="text-xs text-slate-500 mb-0.5 block">Nombre</span>
-          </div>
-          <div className="w-20">
-            <span className="text-xs text-slate-500 mb-0.5 block">Cantidad</span>
-          </div>
-          <div className="w-24">
-            <span className="text-xs text-slate-500 mb-0.5 block">Precio/unidad</span>
-          </div>
+      <div className="flex gap-2 items-end">
+        <div className="w-32">
+          <span className="text-xs text-slate-500 mb-0.5 block">Material</span>
         </div>
-      )}
+        <div className="w-20">
+          <span className="text-xs text-slate-500 mb-0.5 block">Cantidad</span>
+        </div>
+        <div className="w-24">
+          <span className="text-xs text-slate-500 mb-0.5 block">Costo/unidad</span>
+        </div>
+      </div>
 
       {materials.map(mat => (
         <div key={mat.id} className="flex gap-2 items-center">
@@ -37,13 +35,9 @@ export default function MaterialInputs({ title, materials, compact = false, onCh
               {mat.name || <span className="text-slate-600">Sin nombre</span>}
             </div>
           )}
-          <input
-            type="number"
-            value={mat.quantity || ''}
-            onChange={e => onChange(mat.id, 'quantity', Number(e.target.value))}
-            className={`${inputClass} w-20`}
-            placeholder="0"
-          />
+          <span className="w-20 h-9 px-3 bg-slate-900/50 border border-slate-800 rounded-lg text-sm text-slate-300 flex items-center tabular-nums">
+            {mat.quantity || 0}
+          </span>
           <input
             type="number"
             value={mat.pricePerUnit || ''}

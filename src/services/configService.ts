@@ -9,6 +9,7 @@ const DEFAULT_CRAFTING_INPUTS: CraftingInputValues = {
   premium: false,
   focus: false,
   cityBonus: false,
+  craftQuantity: '',
 }
 
 const DEFAULT_SPECTS: Record<string, number> = {
