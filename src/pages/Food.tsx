@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import type { MealItem, CraftMaterial, AppConfig } from '../types/meal'
-import { getMeals } from '../services/mealService'
+import { getMeals, getMealMaterials } from '../services/mealService'
 import { loadConfig, saveConfig } from '../services/configService'
 import FoodSearchBar from '../components/food/FoodSearchBar'
 import EnchantmentSelector from '../components/food/EnchantmentSelector'
@@ -16,8 +16,6 @@ function getBaseName(uniqueName: string): string {
 function getVariantName(baseName: string, enchantment: number): string {
   return enchantment === 0 ? baseName : `${baseName}@${enchantment}`
 }
-
-let materialIdCounter = 0
 
 export default function Food() {
   const [allMeals, setAllMeals] = useState<MealItem[]>([])
@@ -139,12 +137,28 @@ export default function Food() {
 
     const bn = getBaseName(meal.uniqueName)
     const config = loadConfig()
-    const mealConfig = config.meals[bn]
+    const savedMeal = config.meals[bn]
+
+    getMealMaterials(bn).then(dbMaterials => {
+      const mergeMaterials = (dbMats: CraftMaterial[], savedMats: CraftMaterial[]) => {
+        return dbMats.map(dbMat => {
+          const saved = savedMats.find(s => s.name === dbMat.name)
+          return { ...dbMat, pricePerUnit: saved?.pricePerUnit ?? 0 }
+        })
+      }
+
+      setBaseMaterials(mergeMaterials(dbMaterials.base, savedMeal?.baseMaterials ?? []))
+
+      const enchMats: Record<number, CraftMaterial[]> = {}
+      for (const [level, mats] of Object.entries(dbMaterials.enchantment)) {
+        const levelNum = parseInt(level)
+        enchMats[levelNum] = mergeMaterials(mats, savedMeal?.enchantmentMaterials[levelNum] ?? [])
+      }
+      setEnchantmentMaterials(enchMats)
+    })
 
     setSelectedMeal(meal)
     setSelectedEnchantment(meal.enchantment)
-    setBaseMaterials(mealConfig?.baseMaterials ?? [])
-    setEnchantmentMaterials(mealConfig?.enchantmentMaterials ?? {})
   }
 
   const handleEnchantmentSelect = useCallback((level: number) => {
@@ -155,40 +169,10 @@ export default function Food() {
     setSpects(prev => ({ ...prev, [key]: value }))
   }
 
-  function handleBaseMaterialAdd() {
-    materialIdCounter++
-    setBaseMaterials(prev => [
-      ...prev,
-      { id: `mat_${materialIdCounter}`, name: '', quantity: 0, pricePerUnit: 0 },
-    ])
-  }
-
-  function handleBaseMaterialRemove(id: string) {
-    setBaseMaterials(prev => prev.filter(m => m.id !== id))
-  }
-
   function handleBaseMaterialChange(id: string, field: keyof CraftMaterial, value: string | number) {
     setBaseMaterials(prev =>
       prev.map(m => (m.id === id ? { ...m, [field]: value } : m)),
     )
-  }
-
-  function handleEnchantMaterialAdd(enchantment: number) {
-    materialIdCounter++
-    setEnchantmentMaterials(prev => {
-      const list = prev[enchantment] ?? []
-      return {
-        ...prev,
-        [enchantment]: [...list, { id: `mat_${materialIdCounter}`, name: '', quantity: 0, pricePerUnit: 0 }],
-      }
-    })
-  }
-
-  function handleEnchantMaterialRemove(enchantment: number, id: string) {
-    setEnchantmentMaterials(prev => ({
-      ...prev,
-      [enchantment]: (prev[enchantment] ?? []).filter(m => m.id !== id),
-    }))
   }
 
   function handleEnchantMaterialChange(enchantment: number, id: string, field: keyof CraftMaterial, value: string | number) {
@@ -296,11 +280,7 @@ export default function Food() {
               enchantmentMaterials={enchantmentMaterials}
               availableEnchantments={availableEnchantments}
               onSpectsChange={handleSpectsChange}
-              onBaseMaterialAdd={handleBaseMaterialAdd}
-              onBaseMaterialRemove={handleBaseMaterialRemove}
               onBaseMaterialChange={handleBaseMaterialChange}
-              onEnchantMaterialAdd={handleEnchantMaterialAdd}
-              onEnchantMaterialRemove={handleEnchantMaterialRemove}
               onEnchantMaterialChange={handleEnchantMaterialChange}
               onSave={handleSave}
             />

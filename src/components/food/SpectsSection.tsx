@@ -25,13 +25,13 @@ const ROW2: SpecField[] = [
 ]
 
 export default function SpectsSection({ values, onChange }: Props) {
-  const inputClass = 'w-full h-9 px-3 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-500 outline-none focus:border-blue-500/50 transition-colors text-sm text-center'
+  const inputClass = 'w-full h-9 px-3 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-500 outline-none focus:border-blue-500/50 transition-colors text-sm'
 
   function renderRow(fields: SpecField[]) {
     return (
       <div className="flex flex-wrap gap-4">
         {fields.map(f => (
-          <div key={f.key} className="flex flex-col items-center gap-1">
+          <div key={f.key} className="flex flex-col gap-1">
             <span className="text-xs text-slate-400 whitespace-nowrap">{f.label}</span>
             <input
               type="number"

@@ -49,7 +49,7 @@ export default function FoodSearchBar({ query, results, onQueryChange, onSelect 
               >
                 <img src={meal.icon} alt="" className="w-8 h-8 object-contain" />
                 <span>{meal.name}</span>
-                <span className="text-slate-500 text-xs ml-auto">T{meal.tier}</span>
+                <span className="text-slate-500 text-xs ml-auto">T{meal.tier}.{meal.enchantment}</span>
               </button>
             </li>
           ))}

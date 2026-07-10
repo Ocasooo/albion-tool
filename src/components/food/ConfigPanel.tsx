@@ -9,11 +9,7 @@ interface Props {
   enchantmentMaterials: Record<number, CraftMaterial[]>
   availableEnchantments: number[]
   onSpectsChange: (key: string, value: number) => void
-  onBaseMaterialAdd: () => void
-  onBaseMaterialRemove: (id: string) => void
   onBaseMaterialChange: (id: string, field: keyof CraftMaterial, value: string | number) => void
-  onEnchantMaterialAdd: (enchantment: number) => void
-  onEnchantMaterialRemove: (enchantment: number, id: string) => void
   onEnchantMaterialChange: (enchantment: number, id: string, field: keyof CraftMaterial, value: string | number) => void
   onSave: () => void
 }
@@ -24,11 +20,7 @@ export default function ConfigPanel({
   enchantmentMaterials,
   availableEnchantments,
   onSpectsChange,
-  onBaseMaterialAdd,
-  onBaseMaterialRemove,
   onBaseMaterialChange,
-  onEnchantMaterialAdd,
-  onEnchantMaterialRemove,
   onEnchantMaterialChange,
   onSave,
 }: Props) {
@@ -72,18 +64,17 @@ export default function ConfigPanel({
           <MaterialInputs
             title="Materiales base (compartidos en todos los encantamientos)"
             materials={baseMaterials}
-            onAdd={onBaseMaterialAdd}
-            onRemove={onBaseMaterialRemove}
+            compact
             onChange={onBaseMaterialChange}
           />
+
+          <h4 className="text-sm font-semibold text-slate-300">Salsas</h4>
 
           {enchants.map(level => (
             <MaterialInputs
               key={level}
-              title={`Materiales extra para encantamiento @${level}`}
               materials={enchantmentMaterials[level] ?? []}
-              onAdd={() => onEnchantMaterialAdd(level)}
-              onRemove={(id) => onEnchantMaterialRemove(level, id)}
+              compact
               onChange={(id, field, value) => onEnchantMaterialChange(level, id, field, value)}
             />
           ))}
