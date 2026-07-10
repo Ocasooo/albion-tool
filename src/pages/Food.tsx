@@ -26,9 +26,9 @@ export default function Food() {
   const [stationCost, setStationCost] = useState('')
   const [returnPercent, setReturnPercent] = useState('')
   const [taxes, setTaxes] = useState('')
-  const [premium, setPremium] = useState('No')
-  const [focus, setFocus] = useState('No')
-  const [cityBonus, setCityBonus] = useState('')
+  const [premium, setPremium] = useState(false)
+  const [focus, setFocus] = useState(false)
+  const [cityBonus, setCityBonus] = useState(false)
   const [spects, setSpects] = useState<Record<string, number>>({
     cook: 0,
     butchering: 0,
@@ -263,8 +263,6 @@ export default function Food() {
                   focus={focus}
                   cityBonus={cityBonus}
                   onStationCostChange={setStationCost}
-                  onReturnPercentChange={setReturnPercent}
-                  onTaxesChange={setTaxes}
                   onPremiumChange={setPremium}
                   onFocusChange={setFocus}
                   onCityBonusChange={setCityBonus}

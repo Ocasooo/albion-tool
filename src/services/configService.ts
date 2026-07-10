@@ -6,9 +6,9 @@ const DEFAULT_CRAFTING_INPUTS: CraftingInputValues = {
   stationCost: '',
   returnPercent: '',
   taxes: '',
-  premium: 'No',
-  focus: 'No',
-  cityBonus: '',
+  premium: false,
+  focus: false,
+  cityBonus: false,
 }
 
 const DEFAULT_SPECTS: Record<string, number> = {

@@ -14,7 +14,7 @@ export default function Header() {
     <header className="sticky top-0 z-50 bg-slate-900/70 backdrop-blur-md border-b border-slate-800">
       <nav className="max-w-7xl mx-auto h-14 px-6 grid grid-cols-3 items-center">
         <Link to="/" className="flex items-center gap-3 justify-self-start">
-          <img src="/webIcon.png" alt="Logo" className="h-12 w-12 object-contain rounded" />
+          <img src="/webIcon.webp" alt="Logo" className="h-12 w-12 object-contain rounded" width="48" height="48" />
           <span className="text-white font-semibold text-lg">Albion Tool</span>
         </Link>
         <ul className="flex items-center justify-center gap-6">

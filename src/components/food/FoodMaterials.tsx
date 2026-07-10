@@ -7,16 +7,16 @@ interface Props {
 export default function FoodMaterials({ materials }: Props) {
   if (materials.length === 0) {
     return (
-      <div className="p-5 bg-slate-900/60 border border-slate-800 rounded-2xl min-w-48">
+      <div className="p-5 bg-slate-900/60 border border-slate-800 rounded-2xl w-48">
         <p className="text-sm text-slate-500 text-center">
-          Sin materiales. Agrégarlos en configuración.
+          Cargando...
         </p>
       </div>
     )
   }
 
   return (
-    <div className="p-5 bg-slate-900/60 border border-slate-800 rounded-2xl min-w-48">
+    <div className="p-5 bg-slate-900/60 border border-slate-800 rounded-2xl w-48">
       <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
         Materiales
       </h3>

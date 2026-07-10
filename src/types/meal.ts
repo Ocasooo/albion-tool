@@ -18,9 +18,9 @@ export interface CraftingInputValues {
   stationCost: string
   returnPercent: string
   taxes: string
-  premium: string
-  focus: string
-  cityBonus: string
+  premium: boolean
+  focus: boolean
+  cityBonus: boolean
 }
 
 export interface MealConfig {

@@ -14,7 +14,7 @@ export default function FoodCard({ meal }: Props) {
         <img
           src={meal.icon}
           alt={meal.name}
-          className="w-16 h-16 object-contain"
+          className="w-16 h-16 object-contain" loading="lazy" decoding="async"
         />
       </div>
       <span className="text-xs text-slate-500">T{meal.tier}</span>

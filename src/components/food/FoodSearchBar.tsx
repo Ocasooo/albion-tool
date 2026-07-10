@@ -47,7 +47,7 @@ export default function FoodSearchBar({ query, results, onQueryChange, onSelect 
                 onClick={() => handleSelect(meal)}
                 className="w-full px-4 py-3 text-left text-sm text-slate-200 hover:bg-slate-800 transition-colors flex items-center gap-3"
               >
-                <img src={meal.icon} alt="" className="w-8 h-8 object-contain" />
+                <img src={meal.icon} alt="" className="w-8 h-8 object-contain" loading="lazy" decoding="async" />
                 <span>{meal.name}</span>
                 <span className="text-slate-500 text-xs ml-auto">T{meal.tier}.{meal.enchantment}</span>
               </button>

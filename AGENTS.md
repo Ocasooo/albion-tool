@@ -142,3 +142,6 @@ meal_materials: id (INT PK), meal_id (FK), material_name, quantity, is_base (0/1
 - `performance`: Web performance optimization based on Lighthouse audits, Core Web Vitals, and runtime efficiency.
   - Location: `.opencode/skills/performance/SKILL.md`
   - Use when: optimizing load times, reducing bundle size, improving LCP/CLS/TBT, or performing performance audits.
+- `frontend-design`: Guidance for distinctive, intentional visual design — aesthetic direction, typography, layout, and making choices that don't read as templated defaults.
+  - Location: `.opencode/skills/frontend-design/SKILL.md`
+  - Use when: creating new UI components, reshaping existing ones, or working on visual design and styling.
