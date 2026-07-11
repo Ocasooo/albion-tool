@@ -2,15 +2,15 @@ import { createClient } from '@libsql/client'
 
 export const config = { runtime: 'edge' }
 
+const client = createClient({
+  url: process.env.TURSO_DATABASE_URL!,
+  authToken: process.env.TURSO_AUTH_TOKEN || undefined,
+})
+
 export default async function handler(request: Request) {
   if (request.method !== 'GET') {
     return new Response('Method not allowed', { status: 405 })
   }
-
-  const client = createClient({
-    url: process.env.TURSO_DATABASE_URL!,
-    authToken: process.env.TURSO_AUTH_TOKEN || undefined,
-  })
 
   try {
     const result = await client.execute(`
@@ -19,6 +19,7 @@ export default async function handler(request: Request) {
         m.name_es,
         m.name_en,
         m.tier,
+        m.food_type,
         GROUP_CONCAT(DISTINCT mm.enchantment_level) as enchantments
       FROM meals m
       LEFT JOIN meal_materials mm
@@ -39,6 +40,7 @@ export default async function handler(request: Request) {
         tier: row.tier,
         enchantment: 0,
         icon: `https://render.albiononline.com/v1/item/${baseName}.png?size=64`,
+        foodType: row.food_type || '',
       })
 
       if (row.enchantments) {
@@ -51,13 +53,17 @@ export default async function handler(request: Request) {
             tier: row.tier,
             enchantment: level,
             icon: `https://render.albiononline.com/v1/item/${baseName}@${level}.png?size=64`,
+            foodType: row.food_type || '',
           })
         }
       }
     }
 
     return new Response(JSON.stringify(meals), {
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
+      },
     })
   } catch (error) {
     console.error('Error fetching meals:', error)

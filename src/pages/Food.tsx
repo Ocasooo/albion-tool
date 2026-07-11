@@ -1,7 +1,9 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
-import type { MealItem, CraftMaterial, AppConfig } from '../types/meal'
-import { getMeals, getMealMaterials } from '../services/mealService'
+import type { MealItem, CraftMaterial, AppConfig, RecipeMetadata } from '../types/meal'
+import { getAllMeals as getMeals, getMealMaterials } from '../services/mealDbService'
 import { loadConfig, saveConfig } from '../services/configService'
+import { calcFullRecipe } from '../calculos/craftingCalculator'
+import type { CraftingResult } from '../calculos/craftingCalculator'
 import FoodSearchBar from '../components/food/FoodSearchBar'
 import EnchantmentSelector from '../components/food/EnchantmentSelector'
 import FoodCard from '../components/food/FoodCard'
@@ -21,15 +23,16 @@ export default function Food() {
   const [allMeals, setAllMeals] = useState<MealItem[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedQuery, setDebouncedQuery] = useState('')
   const [selectedMeal, setSelectedMeal] = useState<MealItem | null>(null)
   const [selectedEnchantment, setSelectedEnchantment] = useState(0)
   const [stationCost, setStationCost] = useState('')
-  const [returnPercent, setReturnPercent] = useState('')
-  const [taxes, setTaxes] = useState('')
   const [premium, setPremium] = useState(false)
   const [focus, setFocus] = useState(false)
   const [cityBonus, setCityBonus] = useState(false)
   const [craftQuantity, setCraftQuantity] = useState('')
+  const [sellingPrice, setSellingPrice] = useState('')
+  const [recipeMeta, setRecipeMeta] = useState<RecipeMetadata | null>(null)
   const [spects, setSpects] = useState<Record<string, number>>({
     cook: 0,
     butchering: 0,
@@ -44,32 +47,26 @@ export default function Food() {
   })
   const [baseMaterials, setBaseMaterials] = useState<CraftMaterial[]>([])
   const [enchantmentMaterials, setEnchantmentMaterials] = useState<Record<number, CraftMaterial[]>>({})
+  const [materialsLoading, setMaterialsLoading] = useState(false)
 
   const loadedRef = useRef(false)
   const stateRef = useRef({
-    spects, stationCost, returnPercent, taxes, premium, focus, cityBonus, craftQuantity,
+    spects, stationCost, premium, focus, cityBonus, craftQuantity, sellingPrice,
     baseName: null as string | null,
     baseMaterials: [] as CraftMaterial[],
     enchantmentMaterials: {} as Record<number, CraftMaterial[]>,
   })
 
   useEffect(() => {
-    stateRef.current = {
-      spects, stationCost, returnPercent, taxes, premium, focus, cityBonus, craftQuantity,
-      baseName, baseMaterials, enchantmentMaterials,
-    }
-  })
-
-  useEffect(() => {
     const config = loadConfig()
     setSpects(config.spects)
     setStationCost(config.craftingInputs.stationCost)
-    setReturnPercent(config.craftingInputs.returnPercent)
-    setTaxes(config.craftingInputs.taxes)
     setPremium(config.craftingInputs.premium)
     setFocus(config.craftingInputs.focus)
     setCityBonus(config.craftingInputs.cityBonus)
     setCraftQuantity(config.craftingInputs.craftQuantity)
+    setSellingPrice(config.craftingInputs.sellingPrice)
+    loadedRef.current = true
   }, [])
 
   useEffect(() => {
@@ -83,40 +80,55 @@ export default function Food() {
     [selectedMeal],
   )
 
+  useEffect(() => {
+    stateRef.current = {
+      spects, stationCost, premium, focus, cityBonus, craftQuantity, sellingPrice,
+      baseName, baseMaterials, enchantmentMaterials,
+    }
+  }, [spects, stationCost, premium, focus, cityBonus, craftQuantity, sellingPrice, baseName, baseMaterials, enchantmentMaterials])
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(searchQuery), 150)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
   const filteredMeals = useMemo(() => {
-    if (!searchQuery.trim()) return []
-    const q = searchQuery.toLowerCase()
+    if (!debouncedQuery.trim()) return []
+    const q = debouncedQuery.toLowerCase()
     return allMeals.filter(
       m => m.name.toLowerCase().includes(q) || m.nameEn.toLowerCase().includes(q),
     ).slice(0, 30)
-  }, [allMeals, searchQuery])
+  }, [allMeals, debouncedQuery])
+
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (!loadedRef.current) return
-    const config: AppConfig = {
-      meals: {},
-      spects,
-      craftingInputs: { stationCost, returnPercent, taxes, premium, focus, cityBonus, craftQuantity },
-    }
-    const existing = loadConfig()
-    config.meals = { ...existing.meals }
-    if (baseName) {
-      config.meals[baseName] = { baseName, baseMaterials, enchantmentMaterials }
-    }
-    saveConfig(config)
-  }, [spects, stationCost, returnPercent, taxes, premium, focus, cityBonus, craftQuantity, baseName, baseMaterials, enchantmentMaterials])
-
-  useEffect(() => {
-    loadedRef.current = true
-  })
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current)
+    autoSaveTimerRef.current = setTimeout(() => {
+      const config: AppConfig = {
+        meals: {},
+        spects,
+        craftingInputs: { stationCost, premium, focus, cityBonus, craftQuantity, sellingPrice },
+      }
+      const existing = loadConfig()
+      config.meals = { ...existing.meals }
+      if (baseName) {
+        config.meals[baseName] = { baseName, baseMaterials, enchantmentMaterials }
+      }
+      saveConfig(config)
+    }, 500)
+    return () => { if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current) }
+  }, [spects, stationCost, premium, focus, cityBonus, craftQuantity, sellingPrice, baseName, baseMaterials, enchantmentMaterials])
 
   const availableEnchantments = useMemo(() => {
     if (!baseName) return []
+    if (selectedMeal && selectedMeal.tier < 4) return [0]
     return allMeals
       .filter(m => getBaseName(m.uniqueName) === baseName)
       .map(m => m.enchantment)
       .sort()
-  }, [allMeals, baseName])
+  }, [allMeals, baseName, selectedMeal])
 
   const displayedMeal = useMemo(() => {
     if (!baseName || availableEnchantments.length === 0) return null
@@ -130,17 +142,37 @@ export default function Food() {
     return [...baseMaterials, ...extra]
   }, [baseMaterials, enchantmentMaterials, selectedEnchantment])
 
+  const craftResult: CraftingResult | null = useMemo(() => {
+    if (!recipeMeta || !displayedMeal) return null
+    const enchData = recipeMeta.allEnchantments[selectedEnchantment]
+    return calcFullRecipe({
+      materials: displayedMaterials,
+      sellingPrice: parseFloat(sellingPrice) || 0,
+      spects,
+      premium,
+      focus,
+      cityBonus,
+      stationCost: parseFloat(stationCost) || 0,
+      foodType: recipeMeta.foodType,
+      baseFocus: enchData?.baseFocus ?? recipeMeta.baseFocus,
+      iv: enchData?.iv ?? recipeMeta.iv,
+      unitsPerCraft: recipeMeta.unitsPerCraft,
+      craftQuantity: parseInt(craftQuantity) || 0,
+    })
+  }, [recipeMeta, selectedEnchantment, displayedMeal, displayedMaterials, sellingPrice, spects, premium, focus, cityBonus, stationCost, craftQuantity])
+
   function handleSelectMeal(meal: MealItem) {
+    const config = loadConfig()
+
     if (loadedRef.current && baseName) {
-      const config = loadConfig()
       config.meals[baseName] = { baseName, baseMaterials, enchantmentMaterials }
       saveConfig(config)
     }
 
     const bn = getBaseName(meal.uniqueName)
-    const config = loadConfig()
     const savedMeal = config.meals[bn]
 
+    setMaterialsLoading(true)
     getMealMaterials(bn).then(dbMaterials => {
       const mergeMaterials = (dbMats: CraftMaterial[], savedMats: CraftMaterial[]) => {
         return dbMats.map(dbMat => {
@@ -157,6 +189,8 @@ export default function Food() {
         enchMats[levelNum] = mergeMaterials(mats, savedMeal?.enchantmentMaterials[levelNum] ?? [])
       }
       setEnchantmentMaterials(enchMats)
+      setRecipeMeta(dbMaterials.metadata)
+      setMaterialsLoading(false)
     })
 
     setSelectedMeal(meal)
@@ -189,7 +223,7 @@ export default function Food() {
   function handleSave() {
     const config = loadConfig()
     config.spects = spects
-    config.craftingInputs = { stationCost, returnPercent, taxes, premium, focus, cityBonus, craftQuantity }
+    config.craftingInputs = { stationCost, premium, focus, cityBonus, craftQuantity, sellingPrice }
     if (baseName) {
       config.meals[baseName] = { baseName, baseMaterials, enchantmentMaterials }
     }
@@ -204,12 +238,11 @@ export default function Food() {
       config.spects = s.spects
       config.craftingInputs = {
         stationCost: s.stationCost,
-        returnPercent: s.returnPercent,
-        taxes: s.taxes,
         premium: s.premium,
         focus: s.focus,
         cityBonus: s.cityBonus,
         craftQuantity: s.craftQuantity,
+        sellingPrice: s.sellingPrice,
       }
       if (s.baseName) {
         config.meals[s.baseName] = {
@@ -243,54 +276,70 @@ export default function Food() {
         />
 
         {selectedMeal && displayedMeal ? (
-          <>
+          materialsLoading ? (
             <div className="flex flex-wrap gap-6 justify-center">
               <div className="space-y-4 items-center">
-                <EnchantmentSelector
-                  available={availableEnchantments}
-                  selected={selectedEnchantment}
-                  onSelect={handleEnchantmentSelect}
-                />
+                <div className="w-64 h-10 bg-slate-800/60 rounded-lg animate-pulse" />
                 <div className="flex flex-wrap gap-4 justify-center">
-                  <FoodCard meal={displayedMeal} />
-                  <FoodMaterials materials={displayedMaterials} />
+                  <div className="w-40 h-48 bg-slate-800/60 rounded-xl animate-pulse" />
+                  <div className="w-72 h-48 bg-slate-800/60 rounded-xl animate-pulse" />
+                </div>
+              </div>
+              <div className="min-w-56 space-y-3">
+                <div className="h-8 bg-slate-800/60 rounded-lg animate-pulse" />
+                <div className="h-8 bg-slate-800/60 rounded-lg animate-pulse" />
+                <div className="h-8 bg-slate-800/60 rounded-lg animate-pulse" />
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="flex flex-wrap gap-6 justify-center">
+                <div className="space-y-4 items-center">
+                  <EnchantmentSelector
+                    available={availableEnchantments}
+                    selected={selectedEnchantment}
+                    onSelect={handleEnchantmentSelect}
+                  />
+                  <div className="flex flex-wrap gap-4 justify-center">
+                    <FoodCard meal={displayedMeal} />
+                    <FoodMaterials materials={displayedMaterials} />
+                  </div>
+                </div>
+
+                <div className="min-w-56">
+                  <CraftingInputs
+                    stationCost={stationCost}
+                    craftQuantity={craftQuantity}
+                    sellingPrice={sellingPrice}
+                    premium={premium}
+                    focus={focus}
+                    cityBonus={cityBonus}
+                    unitsPerCraft={recipeMeta?.unitsPerCraft ?? 10}
+                    result={craftResult}
+                    onStationCostChange={setStationCost}
+                    onPremiumChange={setPremium}
+                    onFocusChange={setFocus}
+                    onCityBonusChange={setCityBonus}
+                    onCraftQuantityChange={setCraftQuantity}
+                    onSellingPriceChange={setSellingPrice}
+                  />
                 </div>
               </div>
 
-              <div className="min-w-56">
-                <CraftingInputs
-                  stationCost={stationCost}
-                  returnPercent={returnPercent}
-                  taxes={taxes}
-                  premium={premium}
-                  focus={focus}
-                  cityBonus={cityBonus}
-                  craftQuantity={craftQuantity}
-                  focusUsed=""
-                  inversionNecesaria=""
-                  beneficio=""
-                  onStationCostChange={setStationCost}
-                  onPremiumChange={setPremium}
-                  onFocusChange={setFocus}
-                  onCityBonusChange={setCityBonus}
-                  onCraftQuantityChange={setCraftQuantity}
-                />
-              </div>
-            </div>
+              <div className="h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent" />
 
-            <div className="h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent" />
-
-            <ConfigPanel
-              spects={spects}
-              baseMaterials={baseMaterials}
-              enchantmentMaterials={enchantmentMaterials}
-              availableEnchantments={availableEnchantments}
-              onSpectsChange={handleSpectsChange}
-              onBaseMaterialChange={handleBaseMaterialChange}
-              onEnchantMaterialChange={handleEnchantMaterialChange}
-              onSave={handleSave}
-            />
-          </>
+              <ConfigPanel
+                spects={spects}
+                baseMaterials={baseMaterials}
+                enchantmentMaterials={enchantmentMaterials}
+                availableEnchantments={availableEnchantments}
+                onSpectsChange={handleSpectsChange}
+                onBaseMaterialChange={handleBaseMaterialChange}
+                onEnchantMaterialChange={handleEnchantMaterialChange}
+                onSave={handleSave}
+              />
+            </>
+          )
         ) : !loading && allMeals.length > 0 ? (
           <div className="text-center text-slate-500 py-16">
             <p className="text-lg">Busca una comida para comenzar</p>

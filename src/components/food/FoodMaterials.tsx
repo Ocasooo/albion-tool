@@ -1,10 +1,11 @@
+import { memo } from 'react'
 import type { CraftMaterial } from '../../types/meal'
 
 interface Props {
   materials: CraftMaterial[]
 }
 
-export default function FoodMaterials({ materials }: Props) {
+export default memo(function FoodMaterials({ materials }: Props) {
   if (materials.length === 0) {
     return (
       <div className="p-5 bg-slate-900/60 border border-slate-800 rounded-2xl w-48">
@@ -30,4 +31,4 @@ export default function FoodMaterials({ materials }: Props) {
       </ul>
     </div>
   )
-}
+})

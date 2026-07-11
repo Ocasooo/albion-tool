@@ -4,12 +4,11 @@ const STORAGE_KEY = 'albion-tool-config'
 
 const DEFAULT_CRAFTING_INPUTS: CraftingInputValues = {
   stationCost: '',
-  returnPercent: '',
-  taxes: '',
   premium: false,
   focus: false,
   cityBonus: false,
   craftQuantity: '',
+  sellingPrice: '',
 }
 
 const DEFAULT_SPECTS: Record<string, number> = {

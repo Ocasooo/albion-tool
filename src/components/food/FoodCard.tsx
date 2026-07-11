@@ -1,10 +1,11 @@
+import { memo } from 'react'
 import type { MealItem } from '../../types/meal'
 
 interface Props {
   meal: MealItem
 }
 
-export default function FoodCard({ meal }: Props) {
+export default memo(function FoodCard({ meal }: Props) {
   return (
     <div className="flex flex-col items-center gap-3 p-5 bg-slate-900/60 border border-slate-800 rounded-2xl">
       <span className="text-lg font-semibold text-white text-center leading-tight">
@@ -20,4 +21,4 @@ export default function FoodCard({ meal }: Props) {
       <span className="text-xs text-slate-500">T{meal.tier}</span>
     </div>
   )
-}
+})

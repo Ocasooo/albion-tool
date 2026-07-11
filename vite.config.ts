@@ -7,4 +7,17 @@ export default defineConfig({
   plugins: [react(),
     tailwindcss()
   ],
+  build: {
+    target: 'es2023',
+    cssMinify: 'lightningcss',
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/react-dom')) return 'react-vendor'
+          if (id.includes('node_modules/react') && !id.includes('react-dom')) return 'react-vendor'
+          if (id.includes('node_modules/react-router')) return 'router'
+        },
+      },
+    },
+  },
 })

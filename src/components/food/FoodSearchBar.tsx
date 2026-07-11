@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, memo } from 'react'
 import type { MealItem } from '../../types/meal'
 
 interface Props {
@@ -8,7 +8,7 @@ interface Props {
   onSelect: (meal: MealItem) => void
 }
 
-export default function FoodSearchBar({ query, results, onQueryChange, onSelect }: Props) {
+export default memo(function FoodSearchBar({ query, results, onQueryChange, onSelect }: Props) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -62,4 +62,4 @@ export default function FoodSearchBar({ query, results, onQueryChange, onSelect 
       )}
     </div>
   )
-}
+})

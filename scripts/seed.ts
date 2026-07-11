@@ -11,6 +11,55 @@ const client = createClient({
 
 const OPENALBION_API = 'https://api.openalbion.com/api/v3'
 
+const SUBCATEGORY_TO_FOOD_TYPE: Record<string, string> = {
+  Omelette: 'Tortillas',
+  Pie: 'Pasteles',
+  Salad: 'Ensaladas',
+  Sandwich: 'Bocadillos',
+  Soup: 'Sopas',
+  Stew: 'Guisos',
+  Roast: 'Asados',
+}
+
+const RECIPE_DATA: Record<string, { baseFocus: number; iv: number; unitsPerCraft: number }> = {
+  T1_MEAL_SOUP: { baseFocus: 560, iv: 64, unitsPerCraft: 1 },
+  T2_MEAL_SALAD: { baseFocus: 560, iv: 64, unitsPerCraft: 1 },
+  T3_MEAL_SOUP: { baseFocus: 1680, iv: 192, unitsPerCraft: 1 },
+  T3_MEAL_PIE: { baseFocus: 530, iv: 56, unitsPerCraft: 1 },
+  T3_MEAL_OMELETTE: { baseFocus: 520, iv: 56, unitsPerCraft: 1 },
+  T3_MEAL_ROAST: { baseFocus: 580, iv: 64, unitsPerCraft: 1 },
+  T4_MEAL_SALAD: { baseFocus: 1680, iv: 192, unitsPerCraft: 1 },
+  T4_MEAL_STEW: { baseFocus: 610, iv: 64, unitsPerCraft: 1 },
+  T4_MEAL_SANDWICH: { baseFocus: 550, iv: 56, unitsPerCraft: 1 },
+  T5_MEAL_SOUP: { baseFocus: 5040, iv: 576, unitsPerCraft: 1 },
+  T5_MEAL_PIE: { baseFocus: 1800, iv: 192, unitsPerCraft: 1 },
+  T5_MEAL_OMELETTE: { baseFocus: 1550, iv: 168, unitsPerCraft: 1 },
+  T5_MEAL_ROAST: { baseFocus: 1760, iv: 192, unitsPerCraft: 1 },
+  T6_MEAL_SALAD: { baseFocus: 5040, iv: 576, unitsPerCraft: 1 },
+  T6_MEAL_STEW: { baseFocus: 1840, iv: 192, unitsPerCraft: 1 },
+  T6_MEAL_SANDWICH: { baseFocus: 1650, iv: 168, unitsPerCraft: 1 },
+  T7_MEAL_PIE: { baseFocus: 5400, iv: 576, unitsPerCraft: 1 },
+  'T7_MEAL_PIE@1': { baseFocus: 7390, iv: 576, unitsPerCraft: 1 },
+  'T7_MEAL_PIE@2': { baseFocus: 11400, iv: 576, unitsPerCraft: 1 },
+  'T7_MEAL_PIE@3': { baseFocus: 23410, iv: 576, unitsPerCraft: 1 },
+  T7_MEAL_OMELETTE: { baseFocus: 4640, iv: 504, unitsPerCraft: 1 },
+  'T7_MEAL_OMELETTE@1': { baseFocus: 6650, iv: 504, unitsPerCraft: 1 },
+  'T7_MEAL_OMELETTE@2': { baseFocus: 10650, iv: 504, unitsPerCraft: 1 },
+  'T7_MEAL_OMELETTE@3': { baseFocus: 22660, iv: 504, unitsPerCraft: 1 },
+  T7_MEAL_ROAST: { baseFocus: 5280, iv: 576, unitsPerCraft: 1 },
+  'T7_MEAL_ROAST@1': { baseFocus: 7280, iv: 576, unitsPerCraft: 1 },
+  'T7_MEAL_ROAST@2': { baseFocus: 11280, iv: 576, unitsPerCraft: 1 },
+  'T7_MEAL_ROAST@3': { baseFocus: 23290, iv: 576, unitsPerCraft: 1 },
+  T8_MEAL_STEW: { baseFocus: 5510, iv: 576, unitsPerCraft: 1 },
+  'T8_MEAL_STEW@1': { baseFocus: 7520, iv: 576, unitsPerCraft: 1 },
+  'T8_MEAL_STEW@2': { baseFocus: 11520, iv: 576, unitsPerCraft: 1 },
+  'T8_MEAL_STEW@3': { baseFocus: 23530, iv: 576, unitsPerCraft: 1 },
+  T8_MEAL_SANDWICH: { baseFocus: 4940, iv: 504, unitsPerCraft: 1 },
+  'T8_MEAL_SANDWICH@1': { baseFocus: 6940, iv: 504, unitsPerCraft: 1 },
+  'T8_MEAL_SANDWICH@2': { baseFocus: 10940, iv: 504, unitsPerCraft: 1 },
+  'T8_MEAL_SANDWICH@3': { baseFocus: 22950, iv: 504, unitsPerCraft: 1 },
+}
+
 const ES_NAMES: Record<string, string> = {
   T1_MEAL_SEAWEEDSALAD: 'Ensalada de Algas',
   T1_MEAL_SOUP: 'Sopa de Zanahoria',
@@ -72,6 +121,7 @@ interface OpenAlbionConsumable {
   tier: string
   identifier: string
   category: { name: string }
+  subcategory?: { name: string }
 }
 
 interface OpenAlbionCraftingRequirement {
@@ -84,6 +134,7 @@ interface OpenAlbionCrafting {
   data: Array<{
     enchantment: number
     crafting: {
+      per_craft: number
       requirements: OpenAlbionCraftingRequirement[]
     }
   }>
@@ -93,6 +144,8 @@ interface MealRecipe {
   baseName: string
   nameEn: string
   tier: number
+  foodType: string
+  perCraft: number
   baseMaterials: { name: string; quantity: number }[]
   enchantmentMaterials: Record<number, { name: string; quantity: number }[]>
 }
@@ -103,7 +156,9 @@ async function createTables() {
       id TEXT PRIMARY KEY,
       name_es TEXT NOT NULL,
       name_en TEXT NOT NULL,
-      tier INTEGER NOT NULL
+      tier INTEGER NOT NULL,
+      food_type TEXT DEFAULT '',
+      per_craft INTEGER DEFAULT 1
     );
 
     CREATE TABLE IF NOT EXISTS meal_materials (
@@ -114,7 +169,22 @@ async function createTables() {
       is_base INTEGER DEFAULT 1,
       enchantment_level INTEGER
     );
+
+    CREATE TABLE IF NOT EXISTS recipe_data (
+      meal_id TEXT NOT NULL,
+      enchantment_level INTEGER NOT NULL DEFAULT 0,
+      base_focus REAL NOT NULL,
+      iv INTEGER NOT NULL,
+      units_per_craft INTEGER NOT NULL,
+      PRIMARY KEY (meal_id, enchantment_level)
+    );
   `)
+
+  await client.executeMultiple(`
+    ALTER TABLE meals ADD COLUMN food_type TEXT DEFAULT '';
+    ALTER TABLE meals ADD COLUMN per_craft INTEGER DEFAULT 1;
+  `).catch(() => {})
+
   console.log('Tablas creadas/verificadas')
 }
 
@@ -156,14 +226,20 @@ async function fetchAndSeed() {
     const baseName = food.identifier
     const tierMatch = food.tier.match(/^(\d+)/)
     const tier = tierMatch ? parseInt(tierMatch[1]) : 0
+    const foodType = SUBCATEGORY_TO_FOOD_TYPE[food.subcategory?.name ?? ''] ?? ''
 
     const craftingData = await fetchCraftingRecipe(food.id)
     if (!craftingData) continue
 
+    let perCraft = 1
     const baseMaterials: { name: string; quantity: number }[] = []
     const enchantmentMaterials: Record<number, { name: string; quantity: number }[]> = {}
 
     for (const entry of craftingData.data) {
+      if (entry.enchantment === 0) {
+        perCraft = entry.crafting.per_craft
+      }
+
       const mats = entry.crafting.requirements.map(req => ({
         name: formatMaterialName(req.identifier),
         quantity: req.value,
@@ -182,6 +258,8 @@ async function fetchAndSeed() {
       baseName,
       nameEn: food.name,
       tier,
+      foodType,
+      perCraft,
       baseMaterials,
       enchantmentMaterials,
     })
@@ -189,17 +267,37 @@ async function fetchAndSeed() {
 
   console.log(`Total comidas: ${mealsMap.size}`)
 
+  await client.execute('DELETE FROM recipe_data')
   await client.execute('DELETE FROM meal_materials')
   await client.execute('DELETE FROM meals')
 
   const mealStatements: Array<{ sql: string; args: (string | number)[] }> = []
   const materialStatements: Array<{ sql: string; args: (string | number | null)[] }> = []
+  const recipeStatements: Array<{ sql: string; args: (string | number)[] }> = []
 
   for (const [, meal] of mealsMap) {
     mealStatements.push({
-      sql: 'INSERT INTO meals (id, name_es, name_en, tier) VALUES (?, ?, ?, ?)',
-      args: [meal.baseName, ES_NAMES[meal.baseName] ?? meal.nameEn, meal.nameEn, meal.tier],
+      sql: 'INSERT INTO meals (id, name_es, name_en, tier, food_type, per_craft) VALUES (?, ?, ?, ?, ?, ?)',
+      args: [meal.baseName, ES_NAMES[meal.baseName] ?? meal.nameEn, meal.nameEn, meal.tier, meal.foodType, meal.perCraft],
     })
+
+    const recipeInfo = RECIPE_DATA[meal.baseName]
+    if (recipeInfo) {
+      recipeStatements.push({
+        sql: 'INSERT INTO recipe_data (meal_id, enchantment_level, base_focus, iv, units_per_craft) VALUES (?, 0, ?, ?, ?)',
+        args: [meal.baseName, recipeInfo.baseFocus, recipeInfo.iv, recipeInfo.unitsPerCraft],
+      })
+    }
+
+    for (const [key, enchInfo] of Object.entries(RECIPE_DATA)) {
+      if (key.startsWith(`${meal.baseName}@`)) {
+        const enchantment = parseInt(key.split('@')[1])
+        recipeStatements.push({
+          sql: 'INSERT INTO recipe_data (meal_id, enchantment_level, base_focus, iv, units_per_craft) VALUES (?, ?, ?, ?, ?)',
+          args: [meal.baseName, enchantment, enchInfo.baseFocus, enchInfo.iv, enchInfo.unitsPerCraft],
+        })
+      }
+    }
 
     for (const mat of meal.baseMaterials) {
       materialStatements.push({
@@ -220,6 +318,11 @@ async function fetchAndSeed() {
 
   console.log(`Insertando ${mealStatements.length} meals...`)
   await client.batch(mealStatements)
+
+  console.log(`Insertando ${recipeStatements.length} recipe_data...`)
+  if (recipeStatements.length > 0) {
+    await client.batch(recipeStatements)
+  }
 
   console.log(`Insertando ${materialStatements.length} materiales...`)
   const BATCH_SIZE = 100
