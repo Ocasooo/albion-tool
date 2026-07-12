@@ -45,6 +45,75 @@ export const RECIPE_DATA: Record<string, { baseFocus: number; iv: number; unitsP
   'T8_MEAL_SANDWICH@1': { baseFocus: 6940, iv: 504, unitsPerCraft: 1 },
   'T8_MEAL_SANDWICH@2': { baseFocus: 10940, iv: 504, unitsPerCraft: 1 },
   'T8_MEAL_SANDWICH@3': { baseFocus: 22950, iv: 504, unitsPerCraft: 1 },
+  // T1 Fish
+  T1_MEAL_SEAWEEDSALAD: { baseFocus: 4, iv: 0, unitsPerCraft: 1 },
+  // T3 Fish (wiki)
+  T3_MEAL_SOUP_FISH: { baseFocus: 77, iv: 750, unitsPerCraft: 1 },
+  T3_MEAL_PIE_FISH: { baseFocus: 81, iv: 750, unitsPerCraft: 1 },
+  T3_MEAL_OMELETTE_FISH: { baseFocus: 77, iv: 750, unitsPerCraft: 1 },
+  T3_MEAL_ROAST_FISH: { baseFocus: 77, iv: 750, unitsPerCraft: 1 },
+  // T3 Avalon (wiki)
+  T3_MEAL_OMELETTE_AVALON: { baseFocus: 52, iv: 1080, unitsPerCraft: 1 },
+  // T4 Fish (wiki)
+  T4_MEAL_SALAD_FISH: { baseFocus: 77, iv: 750, unitsPerCraft: 1 },
+  T4_MEAL_STEW_FISH: { baseFocus: 77, iv: 750, unitsPerCraft: 1 },
+  T4_MEAL_SANDWICH_FISH: { baseFocus: 81, iv: 750, unitsPerCraft: 1 },
+  // T4 Avalon (wiki)
+  T4_MEAL_SANDWICH_AVALON: { baseFocus: 55, iv: 1080, unitsPerCraft: 1 },
+  T4_MEAL_STEW_AVALON: { baseFocus: 58, iv: 1152, unitsPerCraft: 1 },
+  // T5 Fish (wiki)
+  T5_MEAL_SOUP_FISH: { baseFocus: 231, iv: 750, unitsPerCraft: 1 },
+  T5_MEAL_PIE_FISH: { baseFocus: 225, iv: 750, unitsPerCraft: 1 },
+  T5_MEAL_OMELETTE_FISH: { baseFocus: 225, iv: 750, unitsPerCraft: 1 },
+  T5_MEAL_ROAST_FISH: { baseFocus: 225, iv: 750, unitsPerCraft: 1 },
+  // T5 Avalon (wiki)
+  T5_MEAL_OMELETTE_AVALON: { baseFocus: 155, iv: 1080, unitsPerCraft: 1 },
+  // T6 Fish
+  T6_MEAL_SALAD_FISH: { baseFocus: 672, iv: 750, unitsPerCraft: 1 },
+  'T6_MEAL_SALAD_FISH@1': { baseFocus: 1272, iv: 750, unitsPerCraft: 1 },
+  'T6_MEAL_SALAD_FISH@2': { baseFocus: 2473, iv: 750, unitsPerCraft: 1 },
+  'T6_MEAL_SALAD_FISH@3': { baseFocus: 6076, iv: 750, unitsPerCraft: 1 },
+  T6_MEAL_STEW_FISH: { baseFocus: 225, iv: 750, unitsPerCraft: 1 },
+  T6_MEAL_SANDWICH_FISH: { baseFocus: 231, iv: 750, unitsPerCraft: 1 },
+  // T6 Avalon
+  T6_MEAL_SANDWICH_AVALON: { baseFocus: 165, iv: 1080, unitsPerCraft: 1 },
+  T6_MEAL_STEW_AVALON: { baseFocus: 176, iv: 1152, unitsPerCraft: 1 },
+  // T7 Fish
+  T7_MEAL_PIE_FISH: { baseFocus: 672, iv: 750, unitsPerCraft: 1 },
+  'T7_MEAL_PIE_FISH@1': { baseFocus: 1272, iv: 750, unitsPerCraft: 1 },
+  'T7_MEAL_PIE_FISH@2': { baseFocus: 2473, iv: 750, unitsPerCraft: 1 },
+  'T7_MEAL_PIE_FISH@3': { baseFocus: 6076, iv: 750, unitsPerCraft: 1 },
+  T7_MEAL_OMELETTE_FISH: { baseFocus: 672, iv: 750, unitsPerCraft: 1 },
+  'T7_MEAL_OMELETTE_FISH@1': { baseFocus: 1272, iv: 750, unitsPerCraft: 1 },
+  'T7_MEAL_OMELETTE_FISH@2': { baseFocus: 2473, iv: 750, unitsPerCraft: 1 },
+  'T7_MEAL_OMELETTE_FISH@3': { baseFocus: 6076, iv: 750, unitsPerCraft: 1 },
+  T7_MEAL_ROAST_FISH: { baseFocus: 652, iv: 750, unitsPerCraft: 1 },
+  'T7_MEAL_ROAST_FISH@1': { baseFocus: 1272, iv: 750, unitsPerCraft: 1 },
+  'T7_MEAL_ROAST_FISH@2': { baseFocus: 2473, iv: 750, unitsPerCraft: 1 },
+  'T7_MEAL_ROAST_FISH@3': { baseFocus: 6076, iv: 750, unitsPerCraft: 1 },
+  // T7 Avalon
+  T7_MEAL_OMELETTE_AVALON: { baseFocus: 4640, iv: 1080, unitsPerCraft: 1 },
+  'T7_MEAL_OMELETTE_AVALON@1': { baseFocus: 6650, iv: 1080, unitsPerCraft: 1 },
+  'T7_MEAL_OMELETTE_AVALON@2': { baseFocus: 10650, iv: 1080, unitsPerCraft: 1 },
+  'T7_MEAL_OMELETTE_AVALON@3': { baseFocus: 22660, iv: 1080, unitsPerCraft: 1 },
+  // T8 Fish
+  T8_MEAL_STEW_FISH: { baseFocus: 652, iv: 750, unitsPerCraft: 1 },
+  'T8_MEAL_STEW_FISH@1': { baseFocus: 1253, iv: 750, unitsPerCraft: 1 },
+  'T8_MEAL_STEW_FISH@2': { baseFocus: 2454, iv: 750, unitsPerCraft: 1 },
+  'T8_MEAL_STEW_FISH@3': { baseFocus: 6053, iv: 750, unitsPerCraft: 1 },
+  T8_MEAL_SANDWICH_FISH: { baseFocus: 672, iv: 750, unitsPerCraft: 1 },
+  'T8_MEAL_SANDWICH_FISH@1': { baseFocus: 1272, iv: 750, unitsPerCraft: 1 },
+  'T8_MEAL_SANDWICH_FISH@2': { baseFocus: 2473, iv: 750, unitsPerCraft: 1 },
+  'T8_MEAL_SANDWICH_FISH@3': { baseFocus: 6076, iv: 750, unitsPerCraft: 1 },
+  // T8 Avalon
+  T8_MEAL_STEW_AVALON: { baseFocus: 5280, iv: 1152, unitsPerCraft: 1 },
+  'T8_MEAL_STEW_AVALON@1': { baseFocus: 7280, iv: 1152, unitsPerCraft: 1 },
+  'T8_MEAL_STEW_AVALON@2': { baseFocus: 11280, iv: 1152, unitsPerCraft: 1 },
+  'T8_MEAL_STEW_AVALON@3': { baseFocus: 23290, iv: 1152, unitsPerCraft: 1 },
+  T8_MEAL_SANDWICH_AVALON: { baseFocus: 4940, iv: 1080, unitsPerCraft: 1 },
+  'T8_MEAL_SANDWICH_AVALON@1': { baseFocus: 6940, iv: 1080, unitsPerCraft: 1 },
+  'T8_MEAL_SANDWICH_AVALON@2': { baseFocus: 10940, iv: 1080, unitsPerCraft: 1 },
+  'T8_MEAL_SANDWICH_AVALON@3': { baseFocus: 22950, iv: 1080, unitsPerCraft: 1 },
 }
 
 export function getRecipeData(mealId: string, enchantment: number): { baseFocus: number; iv: number; unitsPerCraft: number } | null {

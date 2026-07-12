@@ -9,6 +9,7 @@ interface Props {
   focus: boolean
   cityBonus: boolean
   unitsPerCraft: number
+  hasFocusData: boolean
   result: CraftingResult | null
   onStationCostChange: (v: string) => void
   onPremiumChange: (v: boolean) => void
@@ -70,7 +71,7 @@ function formatFocus(value: number): string {
 export default memo(function CraftingInputs({
   stationCost, craftQuantity, sellingPrice,
   premium, focus, cityBonus,
-  unitsPerCraft, result,
+  unitsPerCraft, hasFocusData, result,
   onStationCostChange, onPremiumChange, onFocusChange, onCityBonusChange,
   onCraftQuantityChange, onSellingPriceChange,
 }: Props) {
@@ -85,6 +86,9 @@ export default memo(function CraftingInputs({
           <div className="flex-1 space-y-4">
             <Toggle checked={premium} onChange={onPremiumChange} label="Premium" />
             <Toggle checked={focus} onChange={onFocusChange} label="Foco" />
+            {focus && !hasFocusData && (
+              <p className="text-[11px] text-amber-400/80 -mt-1 ml-1">Sin información de foco para esta receta</p>
+            )}
             <Toggle checked={cityBonus} onChange={onCityBonusChange} label="Bono ciudad" />
           </div>
 
@@ -138,11 +142,11 @@ export default memo(function CraftingInputs({
               placeholder="0"
             />
           </div>
-          <DisplayValue label="Foco total" value={result ? formatFocus(result.totalFocus) : '0'} />
+          <DisplayValue label="Foco total" value={!hasFocusData && focus ? 'Sin información' : (result ? formatFocus(result.totalFocus) : '0')} />
           <DisplayValue label="Costo / unidad" value={result ? formatSilver(result.costPerUnit) : '0'} suffix=" silver" />
           <DisplayValue label="Profit / unidad" value={result ? formatSilver(result.profitPerUnit) : '0'} suffix=" silver" highlight={result ? result.profitPerUnit > 0 : false} />
           <DisplayValue label="Profit total" value={result ? formatSilver(result.profitPerBatch) : '0'} suffix=" silver" highlight={result ? result.profitPerBatch > 0 : false} />
-           <DisplayValue label="Silver / focus" value={result ? formatSilver(result.silverPerFocus) : '0'} suffix="" highlight={result ? result.silverPerFocus > 0 : false} />
+           <DisplayValue label="Silver / focus" value={!hasFocusData && focus ? '—' : (result ? formatSilver(result.silverPerFocus) : '0')} highlight={false} />
         </div>
       </div>
     </div>

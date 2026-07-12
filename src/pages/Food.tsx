@@ -161,6 +161,12 @@ export default function Food() {
     })
   }, [recipeMeta, selectedEnchantment, displayedMeal, displayedMaterials, sellingPrice, spects, premium, focus, cityBonus, stationCost, craftQuantity])
 
+  const hasFocusData = useMemo(() => {
+    if (!recipeMeta) return false
+    const enchData = recipeMeta.allEnchantments[selectedEnchantment]
+    return (enchData?.baseFocus ?? recipeMeta.baseFocus) > 0
+  }, [recipeMeta, selectedEnchantment])
+
   function handleSelectMeal(meal: MealItem) {
     const config = loadConfig()
 
@@ -315,6 +321,7 @@ export default function Food() {
                     focus={focus}
                     cityBonus={cityBonus}
                     unitsPerCraft={recipeMeta?.unitsPerCraft ?? 10}
+                    hasFocusData={hasFocusData}
                     result={craftResult}
                     onStationCostChange={setStationCost}
                     onPremiumChange={setPremium}
