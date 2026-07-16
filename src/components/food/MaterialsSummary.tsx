@@ -17,7 +17,7 @@ export default memo(function MaterialsSummary({ materials, craftQuantity, return
 
   const rows = useMemo(() => {
     return materials.map(mat => {
-      const cantNecesaria = mat.quantity * qty * netMultiplier
+      const cantNecesaria = Math.ceil(mat.quantity * qty * netMultiplier)
       return {
         ...mat,
         cantNecesaria,

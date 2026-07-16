@@ -75,13 +75,12 @@ export function calcAdvancedRecipe(input: AdvancedCalculationInput): AdvancedCal
   const focusPerUnit = calcFocusPerUnit(input.baseFocus, focusFactor)
 
   const materialCost = calcMaterialCost(input.materials)
-  const stationCommission = calcStationCommission(input.iv, input.stationCost)
+  const stationCommission = calcStationCommission(input.iv, input.stationCost, input.unitsPerCraft)
   const costPerUnit = calcCostPerUnit(materialCost, returnRate, stationCommission, input.unitsPerCraft)
 
   const numberOfCrafts = input.craftQuantity
   const totalUnits = numberOfCrafts * input.unitsPerCraft
   const totalFocus = numberOfCrafts * focusPerUnit
-  const silverPerFocus = focusPerUnit > 0 ? (costPerUnit > 0 ? totalUnits / totalFocus : 0) : 0
 
   const enabledCities = Object.entries(input.cities)
     .filter(([, data]) => data.enabled)
@@ -144,6 +143,7 @@ export function calcAdvancedRecipe(input: AdvancedCalculationInput): AdvancedCal
     : 0
 
   const profitPerBatch = profitPerUnitAvg * totalUnits
+  const silverPerFocus = focusPerUnit > 0 ? (profitPerUnitAvg * input.unitsPerCraft) / focusPerUnit : 0
 
   const totalRecommendedQuantity = enabledCityResults.reduce(
     (sum, r) => sum + r.recommendedQuantity,

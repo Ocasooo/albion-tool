@@ -57,8 +57,8 @@ export function calcFocusPerUnit(baseFocus: number, focusFactor: number): number
   return baseFocus * focusFactor
 }
 
-export function calcStationCommission(iv: number, stationCost: number): number {
-  return STATION_FEE_RATE * iv * stationCost / 100
+export function calcStationCommission(iv: number, stationCost: number, unitsPerCraft: number): number {
+  return STATION_FEE_RATE * iv * stationCost * unitsPerCraft / 100
 }
 
 export function calcMaterialCost(materials: CraftMaterial[]): number {
@@ -89,7 +89,7 @@ export function calcFullRecipe(input: CraftingInput): CraftingResult {
   const focusPerUnit = calcFocusPerUnit(input.baseFocus, focusFactor)
 
   const materialCost = calcMaterialCost(input.materials)
-  const stationCommission = calcStationCommission(input.iv, input.stationCost)
+  const stationCommission = calcStationCommission(input.iv, input.stationCost, input.unitsPerCraft)
   const costPerUnit = calcCostPerUnit(materialCost, returnRate, stationCommission, input.unitsPerCraft)
 
   const profitPerUnit = calcProfitPerUnit(input.sellingPrice, taxes, costPerUnit)
