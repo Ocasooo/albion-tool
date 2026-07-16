@@ -81,6 +81,7 @@ export default function Food() {
   })
   const [marketSharePercent, setMarketSharePercent] = useState(5)
   const [followRecommendation, setFollowRecommendation] = useState(false)
+  const [manualQuantityMode, setManualQuantityMode] = useState(false)
 
   const loadedRef = useRef(false)
   const stateRef = useRef({
@@ -92,6 +93,7 @@ export default function Food() {
     cityData: {} as Record<City, CityData>,
     marketSharePercent: 5,
     followRecommendation: false,
+    manualQuantityMode: false,
   })
 
   useEffect(() => {
@@ -107,6 +109,7 @@ export default function Food() {
     setCityData(config.advancedConfig.cities)
     setMarketSharePercent(config.advancedConfig.marketSharePercent)
     setFollowRecommendation(config.advancedConfig.followRecommendation)
+    setManualQuantityMode(config.advancedConfig.manualQuantityMode)
     loadedRef.current = true
   }, [])
 
@@ -125,9 +128,9 @@ export default function Food() {
     stateRef.current = {
       spects, stationCost, premium, focus, cityBonus, craftQuantity, sellingPrice,
       baseName, baseMaterials, enchantmentMaterials,
-      calculationMode, cityData, marketSharePercent, followRecommendation,
+      calculationMode, cityData, marketSharePercent, followRecommendation, manualQuantityMode,
     }
-  }, [spects, stationCost, premium, focus, cityBonus, craftQuantity, sellingPrice, baseName, baseMaterials, enchantmentMaterials, calculationMode, cityData, marketSharePercent, followRecommendation])
+  }, [spects, stationCost, premium, focus, cityBonus, craftQuantity, sellingPrice, baseName, baseMaterials, enchantmentMaterials, calculationMode, cityData, marketSharePercent, followRecommendation, manualQuantityMode])
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(searchQuery), 150)
@@ -152,7 +155,7 @@ export default function Food() {
         meals: {},
         spects,
         craftingInputs: { stationCost, premium, focus, cityBonus, craftQuantity, sellingPrice, calculationMode },
-        advancedConfig: { cities: cityData, marketSharePercent, followRecommendation },
+        advancedConfig: { cities: cityData, marketSharePercent, followRecommendation, manualQuantityMode },
       }
       const existing = loadConfig()
       config.meals = { ...existing.meals }
@@ -162,7 +165,7 @@ export default function Food() {
       saveConfig(config)
     }, 500)
     return () => { if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current) }
-  }, [spects, stationCost, premium, focus, cityBonus, craftQuantity, sellingPrice, calculationMode, cityData, marketSharePercent, followRecommendation, baseName, baseMaterials, enchantmentMaterials])
+  }, [spects, stationCost, premium, focus, cityBonus, craftQuantity, sellingPrice, calculationMode, cityData, marketSharePercent, followRecommendation, manualQuantityMode, baseName, baseMaterials, enchantmentMaterials])
 
   const availableEnchantments = useMemo(() => {
     if (!baseName) return []
@@ -222,8 +225,9 @@ export default function Food() {
       cities: cityData,
       marketSharePercent,
       followRecommendation,
+      manualQuantityMode,
     })
-  }, [recipeMeta, selectedEnchantment, displayedMeal, displayedMaterials, spects, premium, focus, cityBonus, stationCost, craftQuantity, calculationMode, cityData, marketSharePercent, followRecommendation])
+  }, [recipeMeta, selectedEnchantment, displayedMeal, displayedMaterials, spects, premium, focus, cityBonus, stationCost, craftQuantity, calculationMode, cityData, marketSharePercent, followRecommendation, manualQuantityMode])
 
   const hasFocusData = useMemo(() => {
     if (!recipeMeta) return false
@@ -298,7 +302,7 @@ export default function Food() {
     const config = loadConfig()
     config.spects = spects
     config.craftingInputs = { stationCost, premium, focus, cityBonus, craftQuantity, sellingPrice, calculationMode }
-    config.advancedConfig = { cities: cityData, marketSharePercent, followRecommendation }
+    config.advancedConfig = { cities: cityData, marketSharePercent, followRecommendation, manualQuantityMode }
     if (baseName) {
       config.meals[baseName] = { baseName, baseMaterials, enchantmentMaterials }
     }
@@ -324,6 +328,7 @@ export default function Food() {
         cities: s.cityData,
         marketSharePercent: s.marketSharePercent,
         followRecommendation: s.followRecommendation,
+        manualQuantityMode: s.manualQuantityMode,
       }
       if (s.baseName) {
         config.meals[s.baseName] = {
@@ -408,6 +413,8 @@ export default function Food() {
                     onCityChange={handleCityChange}
                     onMarketShareChange={setMarketSharePercent}
                     onFollowRecommendationChange={setFollowRecommendation}
+                    manualQuantityMode={manualQuantityMode}
+                    onManualQuantityModeChange={setManualQuantityMode}
                     onCraftQuantityChange={setCraftQuantity}
                   />
 

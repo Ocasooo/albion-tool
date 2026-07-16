@@ -27,6 +27,7 @@ export interface AdvancedCalculationInput {
   cities: Record<City, CityData>
   marketSharePercent: number
   followRecommendation: boolean
+  manualQuantityMode: boolean
 }
 
 export interface CityResult {
@@ -97,8 +98,13 @@ export function calcAdvancedRecipe(input: AdvancedCalculationInput): AdvancedCal
         ? Math.floor((data.dailySales / totalDailySales) * totalUnits)
         : 0
 
-      const actualQuantity = data.sellQuantity > 0 ? data.sellQuantity : 0
-      const isSaturated = data.sellQuantity > 0 && data.sellQuantity > recommendedQuantity
+      const actualQuantity = input.manualQuantityMode
+        ? (data.sellQuantity > 0 ? data.sellQuantity : 0)
+        : (input.followRecommendation ? recommendedQuantity : distributedQuantity)
+
+      const isSaturated = input.manualQuantityMode
+        ? (data.sellQuantity > 0 && data.sellQuantity > recommendedQuantity)
+        : (actualQuantity > recommendedQuantity)
 
       const revenuePerUnit = data.sellingPrice * (1 - taxes)
       const profitPerUnit = revenuePerUnit - costPerUnit

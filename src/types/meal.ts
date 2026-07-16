@@ -39,6 +39,7 @@ export interface AdvancedConfig {
   cities: Record<City, CityData>
   marketSharePercent: number
   followRecommendation: boolean
+  manualQuantityMode: boolean
 }
 
 export interface CraftingInputValues {

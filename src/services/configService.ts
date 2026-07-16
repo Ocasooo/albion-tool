@@ -44,6 +44,7 @@ function defaultConfig(): AppConfig {
       cities: createDefaultCities(),
       marketSharePercent: DEFAULT_MARKET_SHARE,
       followRecommendation: false,
+      manualQuantityMode: false,
     },
   }
 }
@@ -70,6 +71,7 @@ export function loadConfig(): AppConfig {
         cities: mergedCities,
         marketSharePercent: parsed.advancedConfig?.marketSharePercent ?? DEFAULT_MARKET_SHARE,
         followRecommendation: parsed.advancedConfig?.followRecommendation ?? false,
+        manualQuantityMode: parsed.advancedConfig?.manualQuantityMode ?? false,
       },
     }
   } catch {
