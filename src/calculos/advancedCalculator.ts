@@ -60,6 +60,8 @@ export interface AdvancedCalculationResult {
   averageSellingPrice: number
   marketSharePercent: number
   unassignedQuantity: number
+  isOverAssigned: boolean
+  overAssignedQuantity: number
 }
 
 export function calcAdvancedRecipe(input: AdvancedCalculationInput): AdvancedCalculationResult {
@@ -153,6 +155,8 @@ export function calcAdvancedRecipe(input: AdvancedCalculationInput): AdvancedCal
     0,
   )
   const unassignedQuantity = Math.max(0, totalUnits - totalAssigned)
+  const isOverAssigned = totalAssigned > totalUnits
+  const overAssignedQuantity = isOverAssigned ? totalAssigned - totalUnits : 0
 
   return {
     costPerUnit,
@@ -170,5 +174,7 @@ export function calcAdvancedRecipe(input: AdvancedCalculationInput): AdvancedCal
     marketSharePercent: input.marketSharePercent,
     totalRecommendedQuantity,
     unassignedQuantity,
+    isOverAssigned,
+    overAssignedQuantity,
   }
 }

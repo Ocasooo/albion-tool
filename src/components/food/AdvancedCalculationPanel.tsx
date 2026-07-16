@@ -20,6 +20,8 @@ interface Props {
   unitsPerCraft: number
   totalRecommendedQuantity: number
   unassignedQuantity: number
+  isOverAssigned: boolean
+  overAssignedQuantity: number
   onCityChange: (city: City, data: CityData) => void
   onMarketShareChange: (percent: number) => void
   onFollowRecommendationChange: (follow: boolean) => void
@@ -195,6 +197,8 @@ export default memo(function AdvancedCalculationPanel({
   unitsPerCraft,
   totalRecommendedQuantity,
   unassignedQuantity,
+  isOverAssigned,
+  overAssignedQuantity,
   onCityChange,
   onMarketShareChange,
   onFollowRecommendationChange,
@@ -261,6 +265,13 @@ export default memo(function AdvancedCalculationPanel({
           />
         ))}
       </div>
+
+      {manualQuantityMode && isOverAssigned && (
+        <div className="flex items-center gap-2 py-3 px-4 bg-red-500/20 border border-red-500/50 rounded-xl mb-4">
+          <span className="text-lg">&#x26A0;</span>
+          <span className="text-sm text-red-400 font-semibold">Necesitas craftear {fmtNum(overAssignedQuantity)} unidades m&#x00E1;s</span>
+        </div>
+      )}
 
       <div className="space-y-1 mb-4">
         <div className="flex items-center justify-between py-2 px-3 bg-slate-800/30 rounded-lg">

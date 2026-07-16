@@ -410,6 +410,8 @@ export default function Food() {
                     unitsPerCraft={recipeMeta?.unitsPerCraft ?? 10}
                     totalRecommendedQuantity={advancedResult?.totalRecommendedQuantity ?? 0}
                     unassignedQuantity={advancedResult?.unassignedQuantity ?? 0}
+                    isOverAssigned={advancedResult?.isOverAssigned ?? false}
+                    overAssignedQuantity={advancedResult?.overAssignedQuantity ?? 0}
                     onCityChange={handleCityChange}
                     onMarketShareChange={setMarketSharePercent}
                     onFollowRecommendationChange={setFollowRecommendation}
