@@ -1,15 +1,38 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
-import type { MealItem, CraftMaterial, AppConfig, RecipeMetadata } from '../types/meal'
+import type { MealItem, CraftMaterial, AppConfig, RecipeMetadata, CalculationMode, City, CityData } from '../types/meal'
 import { getAllMeals as getMeals, getMealMaterials } from '../services/mealDbService'
 import { loadConfig, saveConfig } from '../services/configService'
 import { calcFullRecipe } from '../calculos/craftingCalculator'
 import type { CraftingResult } from '../calculos/craftingCalculator'
+import { calcAdvancedRecipe } from '../calculos/advancedCalculator'
+import type { AdvancedCalculationResult } from '../calculos/advancedCalculator'
 import FoodSearchBar from '../components/food/FoodSearchBar'
-import EnchantmentSelector from '../components/food/EnchantmentSelector'
 import FoodCard from '../components/food/FoodCard'
-import FoodMaterials from '../components/food/FoodMaterials'
+import MaterialsSummary from '../components/food/MaterialsSummary'
 import CraftingInputs from '../components/food/CraftingInputs'
 import ConfigPanel from '../components/food/ConfigPanel'
+import AdvancedCalculationPanel from '../components/food/AdvancedCalculationPanel'
+
+function fmtSilver(v: number): string {
+  if (v === 0) return '0'
+  return v.toLocaleString('es-ES', { maximumFractionDigits: 0 })
+}
+
+function fmtNum(v: number): string {
+  if (v === 0) return '0'
+  return v.toLocaleString('es-ES', { maximumFractionDigits: 0 })
+}
+
+function CraftResultRow({ label, value, suffix = '', highlight = false }: { label: string; value: string; suffix?: string; highlight?: boolean }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-sm text-slate-400">{label}</span>
+      <span className={`text-sm font-mono tabular-nums ${highlight ? 'text-green-400' : 'text-slate-200'}`}>
+        {value || '0'}{suffix}
+      </span>
+    </div>
+  )
+}
 
 function getBaseName(uniqueName: string): string {
   return uniqueName.replace(/@\d+$/, '')
@@ -48,6 +71,16 @@ export default function Food() {
   const [baseMaterials, setBaseMaterials] = useState<CraftMaterial[]>([])
   const [enchantmentMaterials, setEnchantmentMaterials] = useState<Record<number, CraftMaterial[]>>({})
   const [materialsLoading, setMaterialsLoading] = useState(false)
+  const [calculationMode, setCalculationMode] = useState<CalculationMode>('basic')
+  const [cityData, setCityData] = useState<Record<City, CityData>>({
+    Martlock: { dailySales: 0, sellingPrice: 0, enabled: false, sellQuantity: 0 },
+    Bridgewatch: { dailySales: 0, sellingPrice: 0, enabled: false, sellQuantity: 0 },
+    Lymhurst: { dailySales: 0, sellingPrice: 0, enabled: false, sellQuantity: 0 },
+    'Fort Sterling': { dailySales: 0, sellingPrice: 0, enabled: false, sellQuantity: 0 },
+    Thetford: { dailySales: 0, sellingPrice: 0, enabled: false, sellQuantity: 0 },
+  })
+  const [marketSharePercent, setMarketSharePercent] = useState(5)
+  const [followRecommendation, setFollowRecommendation] = useState(false)
 
   const loadedRef = useRef(false)
   const stateRef = useRef({
@@ -55,6 +88,10 @@ export default function Food() {
     baseName: null as string | null,
     baseMaterials: [] as CraftMaterial[],
     enchantmentMaterials: {} as Record<number, CraftMaterial[]>,
+    calculationMode: 'basic' as CalculationMode,
+    cityData: {} as Record<City, CityData>,
+    marketSharePercent: 5,
+    followRecommendation: false,
   })
 
   useEffect(() => {
@@ -66,6 +103,10 @@ export default function Food() {
     setCityBonus(config.craftingInputs.cityBonus)
     setCraftQuantity(config.craftingInputs.craftQuantity)
     setSellingPrice(config.craftingInputs.sellingPrice)
+    setCalculationMode(config.craftingInputs.calculationMode)
+    setCityData(config.advancedConfig.cities)
+    setMarketSharePercent(config.advancedConfig.marketSharePercent)
+    setFollowRecommendation(config.advancedConfig.followRecommendation)
     loadedRef.current = true
   }, [])
 
@@ -84,8 +125,9 @@ export default function Food() {
     stateRef.current = {
       spects, stationCost, premium, focus, cityBonus, craftQuantity, sellingPrice,
       baseName, baseMaterials, enchantmentMaterials,
+      calculationMode, cityData, marketSharePercent, followRecommendation,
     }
-  }, [spects, stationCost, premium, focus, cityBonus, craftQuantity, sellingPrice, baseName, baseMaterials, enchantmentMaterials])
+  }, [spects, stationCost, premium, focus, cityBonus, craftQuantity, sellingPrice, baseName, baseMaterials, enchantmentMaterials, calculationMode, cityData, marketSharePercent, followRecommendation])
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(searchQuery), 150)
@@ -109,7 +151,8 @@ export default function Food() {
       const config: AppConfig = {
         meals: {},
         spects,
-        craftingInputs: { stationCost, premium, focus, cityBonus, craftQuantity, sellingPrice },
+        craftingInputs: { stationCost, premium, focus, cityBonus, craftQuantity, sellingPrice, calculationMode },
+        advancedConfig: { cities: cityData, marketSharePercent, followRecommendation },
       }
       const existing = loadConfig()
       config.meals = { ...existing.meals }
@@ -119,7 +162,7 @@ export default function Food() {
       saveConfig(config)
     }, 500)
     return () => { if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current) }
-  }, [spects, stationCost, premium, focus, cityBonus, craftQuantity, sellingPrice, baseName, baseMaterials, enchantmentMaterials])
+  }, [spects, stationCost, premium, focus, cityBonus, craftQuantity, sellingPrice, calculationMode, cityData, marketSharePercent, followRecommendation, baseName, baseMaterials, enchantmentMaterials])
 
   const availableEnchantments = useMemo(() => {
     if (!baseName) return []
@@ -160,6 +203,27 @@ export default function Food() {
       craftQuantity: parseInt(craftQuantity) || 0,
     })
   }, [recipeMeta, selectedEnchantment, displayedMeal, displayedMaterials, sellingPrice, spects, premium, focus, cityBonus, stationCost, craftQuantity])
+
+  const advancedResult: AdvancedCalculationResult | null = useMemo(() => {
+    if (!recipeMeta || !displayedMeal || calculationMode !== 'advanced') return null
+    const enchData = recipeMeta.allEnchantments[selectedEnchantment]
+    return calcAdvancedRecipe({
+      materials: displayedMaterials,
+      spects,
+      premium,
+      focus,
+      cityBonus,
+      stationCost: parseFloat(stationCost) || 0,
+      foodType: recipeMeta.foodType,
+      baseFocus: enchData?.baseFocus ?? recipeMeta.baseFocus,
+      iv: enchData?.iv ?? recipeMeta.iv,
+      unitsPerCraft: recipeMeta.unitsPerCraft,
+      craftQuantity: parseInt(craftQuantity) || 0,
+      cities: cityData,
+      marketSharePercent,
+      followRecommendation,
+    })
+  }, [recipeMeta, selectedEnchantment, displayedMeal, displayedMaterials, spects, premium, focus, cityBonus, stationCost, craftQuantity, calculationMode, cityData, marketSharePercent, followRecommendation])
 
   const hasFocusData = useMemo(() => {
     if (!recipeMeta) return false
@@ -226,10 +290,15 @@ export default function Food() {
     }))
   }
 
+  function handleCityChange(city: City, data: CityData) {
+    setCityData(prev => ({ ...prev, [city]: data }))
+  }
+
   function handleSave() {
     const config = loadConfig()
     config.spects = spects
-    config.craftingInputs = { stationCost, premium, focus, cityBonus, craftQuantity, sellingPrice }
+    config.craftingInputs = { stationCost, premium, focus, cityBonus, craftQuantity, sellingPrice, calculationMode }
+    config.advancedConfig = { cities: cityData, marketSharePercent, followRecommendation }
     if (baseName) {
       config.meals[baseName] = { baseName, baseMaterials, enchantmentMaterials }
     }
@@ -249,6 +318,12 @@ export default function Food() {
         cityBonus: s.cityBonus,
         craftQuantity: s.craftQuantity,
         sellingPrice: s.sellingPrice,
+        calculationMode: s.calculationMode,
+      }
+      config.advancedConfig = {
+        cities: s.cityData,
+        marketSharePercent: s.marketSharePercent,
+        followRecommendation: s.followRecommendation,
       }
       if (s.baseName) {
         config.meals[s.baseName] = {
@@ -283,57 +358,105 @@ export default function Food() {
 
         {selectedMeal && displayedMeal ? (
           materialsLoading ? (
-            <div className="flex flex-wrap gap-6 justify-center">
-              <div className="space-y-4 items-center">
-                <div className="w-64 h-10 bg-slate-800/60 rounded-lg animate-pulse" />
-                <div className="flex flex-wrap gap-4 justify-center">
-                  <div className="w-40 h-48 bg-slate-800/60 rounded-xl animate-pulse" />
-                  <div className="w-72 h-48 bg-slate-800/60 rounded-xl animate-pulse" />
-                </div>
-              </div>
-              <div className="min-w-56 space-y-3">
-                <div className="h-8 bg-slate-800/60 rounded-lg animate-pulse" />
-                <div className="h-8 bg-slate-800/60 rounded-lg animate-pulse" />
-                <div className="h-8 bg-slate-800/60 rounded-lg animate-pulse" />
-              </div>
+            <div className="flex flex-wrap gap-6 justify-center items-start">
+              <div className="w-40 h-48 bg-slate-800/60 rounded-xl animate-pulse" />
+              <div className="w-72 h-48 bg-slate-800/60 rounded-xl animate-pulse" />
             </div>
           ) : (
             <>
-              <div className="flex flex-wrap gap-6 justify-center">
-                <div className="space-y-4 items-center">
-                  <EnchantmentSelector
-                    available={availableEnchantments}
-                    selected={selectedEnchantment}
-                    onSelect={handleEnchantmentSelect}
-                  />
-                  <div className="flex flex-wrap gap-4 justify-center">
-                    <FoodCard meal={displayedMeal} />
-                    <FoodMaterials materials={displayedMaterials} />
-                  </div>
-                </div>
-
-                <div className="min-w-56">
-                  <CraftingInputs
-                    stationCost={stationCost}
-                    craftQuantity={craftQuantity}
-                    sellingPrice={sellingPrice}
-                    premium={premium}
-                    focus={focus}
-                    cityBonus={cityBonus}
-                    unitsPerCraft={recipeMeta?.unitsPerCraft ?? 10}
-                    hasFocusData={hasFocusData}
-                    result={craftResult}
-                    onStationCostChange={setStationCost}
-                    onPremiumChange={setPremium}
-                    onFocusChange={setFocus}
-                    onCityBonusChange={setCityBonus}
-                    onCraftQuantityChange={setCraftQuantity}
-                    onSellingPriceChange={setSellingPrice}
-                  />
-                </div>
+              <div className="flex flex-wrap gap-6 justify-center items-start">
+                <FoodCard meal={displayedMeal} />
+                <CraftingInputs
+                  stationCost={stationCost}
+                  premium={premium}
+                  focus={focus}
+                  cityBonus={cityBonus}
+                  hasFocusData={hasFocusData}
+                  result={craftResult}
+                  availableEnchantments={availableEnchantments}
+                  selectedEnchantment={selectedEnchantment}
+                  calculationMode={calculationMode}
+                  onEnchantmentSelect={handleEnchantmentSelect}
+                  onStationCostChange={setStationCost}
+                  onPremiumChange={setPremium}
+                  onFocusChange={setFocus}
+                  onCityBonusChange={setCityBonus}
+                  onCalculationModeChange={setCalculationMode}
+                />
               </div>
 
               <div className="h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent" />
+
+              {calculationMode === 'advanced' ? (
+                <div className="space-y-6">
+                  <AdvancedCalculationPanel
+                    cities={cityData}
+                    marketSharePercent={marketSharePercent}
+                    followRecommendation={followRecommendation}
+                    cityResults={advancedResult?.cityResults ?? []}
+                    totalProfit={advancedResult?.totalProfit ?? 0}
+                    averageSellingPrice={advancedResult?.averageSellingPrice ?? 0}
+                    costPerUnit={advancedResult?.costPerUnit ?? 0}
+                    profitPerUnit={advancedResult?.profitPerUnit ?? 0}
+                    silverPerFocus={advancedResult?.silverPerFocus ?? 0}
+                    totalFocus={advancedResult?.totalFocus ?? 0}
+                    hasFocusData={hasFocusData}
+                    craftQuantity={craftQuantity}
+                    unitsPerCraft={recipeMeta?.unitsPerCraft ?? 10}
+                    totalRecommendedQuantity={advancedResult?.totalRecommendedQuantity ?? 0}
+                    unassignedQuantity={advancedResult?.unassignedQuantity ?? 0}
+                    onCityChange={handleCityChange}
+                    onMarketShareChange={setMarketSharePercent}
+                    onFollowRecommendationChange={setFollowRecommendation}
+                    onCraftQuantityChange={setCraftQuantity}
+                  />
+
+                  <MaterialsSummary materials={displayedMaterials} craftQuantity={parseInt(craftQuantity) || 1} unitsPerCraft={recipeMeta?.unitsPerCraft ?? 10} />
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="p-5 bg-slate-900/60 border border-slate-800 rounded-2xl">
+                    <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">
+                      Cantidad a craftear
+                    </h3>
+
+                    <div className="space-y-3">
+                      <div className="relative">
+                        <span className="absolute -top-4 right-1 text-[10px] text-slate-500 tabular-nums">
+                          1×{recipeMeta?.unitsPerCraft ?? 10}
+                        </span>
+                        <div className="flex items-center justify-between gap-5">
+                          <span className="text-sm text-slate-400 whitespace-nowrap">Cantidad</span>
+                          <input
+                            type="number"
+                            value={craftQuantity}
+                            onChange={e => setCraftQuantity(e.target.value)}
+                            className="w-16 h-9 px-3 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm placeholder-slate-600 outline-none focus:border-blue-500/50 transition-colors tabular-nums text-right"
+                            placeholder="0"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between gap-5">
+                        <span className="text-sm text-slate-400 whitespace-nowrap">Precio venta</span>
+                        <input
+                          type="number"
+                          value={sellingPrice}
+                          onChange={e => setSellingPrice(e.target.value)}
+                          className="w-28 h-9 px-3 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm placeholder-slate-600 outline-none focus:border-blue-500/50 transition-colors tabular-nums text-right"
+                          placeholder="0"
+                        />
+                      </div>
+                      <CraftResultRow label="Foco total" value={!hasFocusData && focus ? 'Sin información' : (craftResult ? fmtNum(craftResult.totalFocus) : '0')} />
+                      <CraftResultRow label="Costo / unidad" value={craftResult ? fmtSilver(craftResult.costPerUnit) : '0'} suffix=" silver" />
+                      <CraftResultRow label="Profit / unidad" value={craftResult ? fmtSilver(craftResult.profitPerUnit) : '0'} suffix=" silver" highlight={craftResult ? craftResult.profitPerUnit > 0 : false} />
+                      <CraftResultRow label="Profit total" value={craftResult ? fmtSilver(craftResult.profitPerBatch) : '0'} suffix=" silver" highlight={craftResult ? craftResult.profitPerBatch > 0 : false} />
+                      <CraftResultRow label="Silver / focus" value={!hasFocusData && focus ? '—' : (craftResult ? fmtSilver(craftResult.silverPerFocus) : '0')} />
+                    </div>
+                  </div>
+
+                  <MaterialsSummary materials={displayedMaterials} craftQuantity={parseInt(craftQuantity) || 1} unitsPerCraft={recipeMeta?.unitsPerCraft ?? 10} />
+                </div>
+              )}
 
               <ConfigPanel
                 spects={spects}

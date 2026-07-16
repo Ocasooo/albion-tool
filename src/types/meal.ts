@@ -23,6 +23,24 @@ export interface RecipeMetadata {
   allEnchantments: Record<number, { baseFocus: number; iv: number }>
 }
 
+export type CalculationMode = 'basic' | 'advanced'
+
+export const CITIES = ['Martlock', 'Bridgewatch', 'Lymhurst', 'Fort Sterling', 'Thetford'] as const
+export type City = typeof CITIES[number]
+
+export interface CityData {
+  dailySales: number
+  sellingPrice: number
+  enabled: boolean
+  sellQuantity: number
+}
+
+export interface AdvancedConfig {
+  cities: Record<City, CityData>
+  marketSharePercent: number
+  followRecommendation: boolean
+}
+
 export interface CraftingInputValues {
   stationCost: string
   premium: boolean
@@ -30,6 +48,7 @@ export interface CraftingInputValues {
   cityBonus: boolean
   craftQuantity: string
   sellingPrice: string
+  calculationMode: CalculationMode
 }
 
 export interface MealConfig {
@@ -43,4 +62,5 @@ export interface AppConfig {
   meals: Record<string, MealConfig>
   spects: Record<string, number>
   craftingInputs: CraftingInputValues
+  advancedConfig: AdvancedConfig
 }
