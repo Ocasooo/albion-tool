@@ -4,27 +4,27 @@ import type { CraftMaterial } from '../../types/meal'
 interface Props {
   materials: CraftMaterial[]
   craftQuantity: number
-  unitsPerCraft: number
+  returnRate: number
 }
 
 function formatSilver(value: number): string {
   return value.toLocaleString('es-ES', { maximumFractionDigits: 0 })
 }
 
-export default memo(function MaterialsSummary({ materials, craftQuantity, unitsPerCraft }: Props) {
+export default memo(function MaterialsSummary({ materials, craftQuantity, returnRate }: Props) {
   const qty = craftQuantity || 1
-  const totalUnits = qty * unitsPerCraft
+  const netMultiplier = 1 - returnRate
 
   const rows = useMemo(() => {
     return materials.map(mat => {
-      const cantNecesaria = mat.quantity * totalUnits
+      const cantNecesaria = mat.quantity * qty * netMultiplier
       return {
         ...mat,
         cantNecesaria,
         subtotal: cantNecesaria * mat.pricePerUnit,
       }
     })
-  }, [materials, totalUnits])
+  }, [materials, qty, netMultiplier])
 
   const grandTotal = useMemo(() => {
     return rows.reduce((sum, r) => sum + r.subtotal, 0)

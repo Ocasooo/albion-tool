@@ -63,8 +63,14 @@ export function loadConfig(): AppConfig {
         }
       }
     }
+    const mergedMeals = parsed.meals ?? {}
+    for (const key of Object.keys(mergedMeals)) {
+      if (!mergedMeals[key].enchantmentData) {
+        mergedMeals[key].enchantmentData = {}
+      }
+    }
     return {
-      meals: parsed.meals ?? {},
+      meals: mergedMeals,
       spects: { ...DEFAULT_SPECTS, ...parsed.spects },
       craftingInputs: { ...DEFAULT_CRAFTING_INPUTS, ...parsed.craftingInputs },
       advancedConfig: {

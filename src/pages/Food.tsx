@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import type { MealItem, CraftMaterial, AppConfig, RecipeMetadata, CalculationMode, City, CityData } from '../types/meal'
 import { getAllMeals as getMeals, getMealMaterials } from '../services/mealDbService'
 import { loadConfig, saveConfig } from '../services/configService'
-import { calcFullRecipe } from '../calculos/craftingCalculator'
+import { calcFullRecipe, calcReturnRate } from '../calculos/craftingCalculator'
 import type { CraftingResult } from '../calculos/craftingCalculator'
 import { calcAdvancedRecipe } from '../calculos/advancedCalculator'
 import type { AdvancedCalculationResult } from '../calculos/advancedCalculator'
@@ -94,6 +94,7 @@ export default function Food() {
     marketSharePercent: 5,
     followRecommendation: false,
     manualQuantityMode: false,
+    selectedEnchantment: 0,
   })
 
   useEffect(() => {
@@ -125,12 +126,38 @@ export default function Food() {
   )
 
   useEffect(() => {
+    if (!loadedRef.current || !baseName) return
+    const config = loadConfig()
+    const saved = config.meals[baseName]?.enchantmentData?.[selectedEnchantment]
+    if (saved) {
+      setSellingPrice(saved.basicSellingPrice || '')
+      setCityData(saved.cityData || {
+        Martlock: { dailySales: 0, sellingPrice: 0, enabled: false, sellQuantity: 0 },
+        Bridgewatch: { dailySales: 0, sellingPrice: 0, enabled: false, sellQuantity: 0 },
+        Lymhurst: { dailySales: 0, sellingPrice: 0, enabled: false, sellQuantity: 0 },
+        'Fort Sterling': { dailySales: 0, sellingPrice: 0, enabled: false, sellQuantity: 0 },
+        Thetford: { dailySales: 0, sellingPrice: 0, enabled: false, sellQuantity: 0 },
+      })
+    } else {
+      setSellingPrice('')
+      setCityData({
+        Martlock: { dailySales: 0, sellingPrice: 0, enabled: false, sellQuantity: 0 },
+        Bridgewatch: { dailySales: 0, sellingPrice: 0, enabled: false, sellQuantity: 0 },
+        Lymhurst: { dailySales: 0, sellingPrice: 0, enabled: false, sellQuantity: 0 },
+        'Fort Sterling': { dailySales: 0, sellingPrice: 0, enabled: false, sellQuantity: 0 },
+        Thetford: { dailySales: 0, sellingPrice: 0, enabled: false, sellQuantity: 0 },
+      })
+    }
+  }, [baseName, selectedEnchantment])
+
+  useEffect(() => {
     stateRef.current = {
       spects, stationCost, premium, focus, cityBonus, craftQuantity, sellingPrice,
       baseName, baseMaterials, enchantmentMaterials,
       calculationMode, cityData, marketSharePercent, followRecommendation, manualQuantityMode,
+      selectedEnchantment,
     }
-  }, [spects, stationCost, premium, focus, cityBonus, craftQuantity, sellingPrice, baseName, baseMaterials, enchantmentMaterials, calculationMode, cityData, marketSharePercent, followRecommendation, manualQuantityMode])
+  }, [spects, stationCost, premium, focus, cityBonus, craftQuantity, sellingPrice, baseName, baseMaterials, enchantmentMaterials, calculationMode, cityData, marketSharePercent, followRecommendation, manualQuantityMode, selectedEnchantment])
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(searchQuery), 150)
@@ -144,6 +171,21 @@ export default function Food() {
       m => m.name.toLowerCase().includes(q) || m.nameEn.toLowerCase().includes(q),
     ).slice(0, 30)
   }, [allMeals, debouncedQuery])
+
+  const saveEnchantmentDataToConfig = useCallback((config: AppConfig) => {
+    if (!baseName) return
+    if (!config.meals[baseName]) {
+      config.meals[baseName] = { baseName, baseMaterials: [], enchantmentMaterials: {}, enchantmentData: {} }
+    }
+    if (!config.meals[baseName].enchantmentData) {
+      config.meals[baseName].enchantmentData = {}
+    }
+    config.meals[baseName].enchantmentData[selectedEnchantment] = {
+      basicSellingPrice: sellingPrice,
+      advancedSellingPrice: sellingPrice,
+      cityData: cityData,
+    }
+  }, [baseName, selectedEnchantment, sellingPrice, cityData])
 
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -160,12 +202,13 @@ export default function Food() {
       const existing = loadConfig()
       config.meals = { ...existing.meals }
       if (baseName) {
-        config.meals[baseName] = { baseName, baseMaterials, enchantmentMaterials }
+        config.meals[baseName] = { ...config.meals[baseName], baseName, baseMaterials, enchantmentMaterials }
+        saveEnchantmentDataToConfig(config)
       }
       saveConfig(config)
     }, 500)
     return () => { if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current) }
-  }, [spects, stationCost, premium, focus, cityBonus, craftQuantity, sellingPrice, calculationMode, cityData, marketSharePercent, followRecommendation, manualQuantityMode, baseName, baseMaterials, enchantmentMaterials])
+  }, [spects, stationCost, premium, focus, cityBonus, craftQuantity, sellingPrice, calculationMode, cityData, marketSharePercent, followRecommendation, manualQuantityMode, baseName, baseMaterials, enchantmentMaterials, selectedEnchantment, saveEnchantmentDataToConfig])
 
   const availableEnchantments = useMemo(() => {
     if (!baseName) return []
@@ -235,11 +278,14 @@ export default function Food() {
     return (enchData?.baseFocus ?? recipeMeta.baseFocus) > 0
   }, [recipeMeta, selectedEnchantment])
 
+  const returnRate = useMemo(() => calcReturnRate(cityBonus, focus), [cityBonus, focus])
+
   function handleSelectMeal(meal: MealItem) {
     const config = loadConfig()
 
     if (loadedRef.current && baseName) {
-      config.meals[baseName] = { baseName, baseMaterials, enchantmentMaterials }
+      config.meals[baseName] = { ...config.meals[baseName], baseName, baseMaterials, enchantmentMaterials }
+      saveEnchantmentDataToConfig(config)
       saveConfig(config)
     }
 
@@ -271,9 +317,14 @@ export default function Food() {
     setSelectedEnchantment(meal.enchantment)
   }
 
-  const handleEnchantmentSelect = useCallback((level: number) => {
+  function handleEnchantmentSelect(level: number) {
+    if (loadedRef.current && baseName) {
+      const config = loadConfig()
+      saveEnchantmentDataToConfig(config)
+      saveConfig(config)
+    }
     setSelectedEnchantment(level)
-  }, [])
+  }
 
   function handleSpectsChange(key: string, value: number) {
     setSpects(prev => ({ ...prev, [key]: value }))
@@ -304,7 +355,8 @@ export default function Food() {
     config.craftingInputs = { stationCost, premium, focus, cityBonus, craftQuantity, sellingPrice, calculationMode }
     config.advancedConfig = { cities: cityData, marketSharePercent, followRecommendation, manualQuantityMode }
     if (baseName) {
-      config.meals[baseName] = { baseName, baseMaterials, enchantmentMaterials }
+      config.meals[baseName] = { ...config.meals[baseName], baseName, baseMaterials, enchantmentMaterials }
+      saveEnchantmentDataToConfig(config)
     }
     saveConfig(config)
   }
@@ -332,9 +384,18 @@ export default function Food() {
       }
       if (s.baseName) {
         config.meals[s.baseName] = {
+          ...config.meals[s.baseName],
           baseName: s.baseName,
           baseMaterials: s.baseMaterials,
           enchantmentMaterials: s.enchantmentMaterials,
+        }
+        if (!config.meals[s.baseName].enchantmentData) {
+          config.meals[s.baseName].enchantmentData = {}
+        }
+        config.meals[s.baseName].enchantmentData[s.selectedEnchantment] = {
+          basicSellingPrice: s.sellingPrice,
+          advancedSellingPrice: s.sellingPrice,
+          cityData: s.cityData,
         }
       }
       saveConfig(config)
@@ -420,7 +481,7 @@ export default function Food() {
                     onCraftQuantityChange={setCraftQuantity}
                   />
 
-                  <MaterialsSummary materials={displayedMaterials} craftQuantity={parseInt(craftQuantity) || 1} unitsPerCraft={recipeMeta?.unitsPerCraft ?? 10} />
+                  <MaterialsSummary materials={displayedMaterials} craftQuantity={parseInt(craftQuantity) || 1} returnRate={returnRate} />
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -463,7 +524,7 @@ export default function Food() {
                     </div>
                   </div>
 
-                  <MaterialsSummary materials={displayedMaterials} craftQuantity={parseInt(craftQuantity) || 1} unitsPerCraft={recipeMeta?.unitsPerCraft ?? 10} />
+                  <MaterialsSummary materials={displayedMaterials} craftQuantity={parseInt(craftQuantity) || 1} returnRate={returnRate} />
                 </div>
               )}
 

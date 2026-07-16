@@ -52,11 +52,18 @@ export interface CraftingInputValues {
   calculationMode: CalculationMode
 }
 
+export interface MealEnchantmentData {
+  basicSellingPrice: string
+  advancedSellingPrice: string
+  cityData: Record<City, CityData>
+}
+
 export interface MealConfig {
   baseName: string
   baseMaterials: CraftMaterial[]
   enchantmentMaterials: Record<number, CraftMaterial[]>
   recipe?: RecipeMetadata
+  enchantmentData: Record<number, MealEnchantmentData>
 }
 
 export interface AppConfig {

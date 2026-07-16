@@ -138,7 +138,7 @@ stationCommission = 0.1125 * ivValue * (stationCost / 10) / (10 / unitsPerCraft)
 
 Simplificado:
 ```
-stationCommission = 0.1125 * ivValue * stationCost * unitsPerCraft / 100
+stationCommission = 0.1125 * ivValue * stationCost / 100
 ```
 
 Donde:

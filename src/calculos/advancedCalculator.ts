@@ -75,7 +75,7 @@ export function calcAdvancedRecipe(input: AdvancedCalculationInput): AdvancedCal
   const focusPerUnit = calcFocusPerUnit(input.baseFocus, focusFactor)
 
   const materialCost = calcMaterialCost(input.materials)
-  const stationCommission = calcStationCommission(input.iv, input.stationCost, input.unitsPerCraft)
+  const stationCommission = calcStationCommission(input.iv, input.stationCost)
   const costPerUnit = calcCostPerUnit(materialCost, returnRate, stationCommission, input.unitsPerCraft)
 
   const numberOfCrafts = input.craftQuantity
