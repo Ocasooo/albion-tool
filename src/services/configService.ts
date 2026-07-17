@@ -46,6 +46,7 @@ function defaultConfig(): AppConfig {
       followRecommendation: false,
       manualQuantityMode: false,
     },
+    pinnedCrafts: [],
   }
 }
 
@@ -79,6 +80,7 @@ export function loadConfig(): AppConfig {
         followRecommendation: parsed.advancedConfig?.followRecommendation ?? false,
         manualQuantityMode: parsed.advancedConfig?.manualQuantityMode ?? false,
       },
+      pinnedCrafts: Array.isArray(parsed.pinnedCrafts) ? parsed.pinnedCrafts : [],
     }
   } catch {
     return defaultConfig()

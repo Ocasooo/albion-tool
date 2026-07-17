@@ -27,6 +27,8 @@ interface Props {
   onFollowRecommendationChange: (follow: boolean) => void
   onManualQuantityModeChange: (manual: boolean) => void
   onCraftQuantityChange: (value: string) => void
+  onPinCraft: () => void
+  isCurrentlyPinned: boolean
 }
 
 function fmtSilver(v: number): string {
@@ -204,6 +206,8 @@ export default memo(function AdvancedCalculationPanel({
   onFollowRecommendationChange,
   onManualQuantityModeChange,
   onCraftQuantityChange,
+  onPinCraft,
+  isCurrentlyPinned,
 }: Props) {
   return (
     <div className="p-5 bg-slate-900/60 border border-slate-800 rounded-2xl">
@@ -341,6 +345,22 @@ export default memo(function AdvancedCalculationPanel({
           label="Silver / focus"
           value={!hasFocusData ? '\u2014' : fmtSilver(silverPerFocus)}
         />
+      </div>
+
+      <div className="mt-4 pt-3 border-t border-slate-800/60">
+        <button
+          onClick={onPinCraft}
+          className={`w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+            isCurrentlyPinned
+              ? 'bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 border border-blue-500/30'
+              : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700'
+          }`}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+            <path fillRule="evenodd" d="M10 2a.75.75 0 01.75.75v2.5a.75.75 0 01-1.5 0v-2.5A.75.75 0 0110 2zM10 15a.75.75 0 01.75.75v2.5a.75.75 0 01-1.5 0v-2.5A.75.75 0 0110 15zM10 7a3 3 0 100 6 3 3 0 000-6zM15.657 5.404a.75.75 0 10-1.06-1.06l-1.768 1.768a.75.75 0 001.06 1.06l1.768-1.768zM6.464 14.596a.75.75 0 10-1.06-1.06l-1.768 1.768a.75.75 0 001.06 1.06l1.768-1.768zM18 10a.75.75 0 01-.75.75h-2.5a.75.75 0 010-1.5h2.5A.75.75 0 0118 10zM5 10a.75.75 0 01-.75.75h-2.5a.75.75 0 010-1.5h2.5A.75.75 0 015 10zM14.596 15.657a.75.75 0 001.06-1.06l-1.768-1.768a.75.75 0 00-1.06 1.06l1.768 1.768zM5.404 6.464a.75.75 0 001.06-1.06l-1.768-1.768a.75.75 0 10-1.06 1.06l1.768 1.768z" clipRule="evenodd" />
+          </svg>
+          {isCurrentlyPinned ? 'Actualizar pin' : 'Pin craft'}
+        </button>
       </div>
     </div>
   )

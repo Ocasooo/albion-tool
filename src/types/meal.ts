@@ -66,9 +66,38 @@ export interface MealConfig {
   enchantmentData: Record<number, MealEnchantmentData>
 }
 
+export interface PinnedCraft {
+  id: string
+  mealName: string
+  mealIcon: string
+  mealUniqueName: string
+  enchantment: number
+  tier: number
+  result: {
+    costPerUnit: number
+    profitPerUnit: number
+    profitPerBatch: number
+    silverPerFocus: number
+    totalFocus: number
+    returnRate: number
+    taxes: number
+    stationCommission: number
+    numberOfCrafts: number
+  }
+  materials: CraftMaterial[]
+  craftQuantity: number
+  sellingPrice: number
+  premium: boolean
+  focus: boolean
+  cityBonus: boolean
+  stationCost: number
+  recipeMeta: RecipeMetadata
+}
+
 export interface AppConfig {
   meals: Record<string, MealConfig>
   spects: Record<string, number>
   craftingInputs: CraftingInputValues
   advancedConfig: AdvancedConfig
+  pinnedCrafts: PinnedCraft[]
 }

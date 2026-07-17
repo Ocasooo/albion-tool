@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
-import type { MealItem, CraftMaterial, AppConfig, RecipeMetadata, CalculationMode, City, CityData } from '../types/meal'
+import type { MealItem, CraftMaterial, AppConfig, RecipeMetadata, CalculationMode, City, CityData, PinnedCraft } from '../types/meal'
 import { getAllMeals as getMeals, getMealMaterials } from '../services/mealDbService'
 import { loadConfig, saveConfig } from '../services/configService'
 import { calcFullRecipe, calcReturnRate } from '../calculos/craftingCalculator'
@@ -12,6 +12,7 @@ import MaterialsSummary from '../components/food/MaterialsSummary'
 import CraftingInputs from '../components/food/CraftingInputs'
 import ConfigPanel from '../components/food/ConfigPanel'
 import AdvancedCalculationPanel from '../components/food/AdvancedCalculationPanel'
+import PinnedCraftCard from '../components/food/PinnedCraftCard'
 
 function fmtSilver(v: number): string {
   if (v === 0) return '0'
@@ -82,6 +83,7 @@ export default function Food() {
   const [marketSharePercent, setMarketSharePercent] = useState(5)
   const [followRecommendation, setFollowRecommendation] = useState(false)
   const [manualQuantityMode, setManualQuantityMode] = useState(false)
+  const [pinnedCrafts, setPinnedCrafts] = useState<PinnedCraft[]>([])
 
   const loadedRef = useRef(false)
   const stateRef = useRef({
@@ -95,6 +97,7 @@ export default function Food() {
     followRecommendation: false,
     manualQuantityMode: false,
     selectedEnchantment: 0,
+    pinnedCrafts: [] as PinnedCraft[],
   })
 
   useEffect(() => {
@@ -111,6 +114,7 @@ export default function Food() {
     setMarketSharePercent(config.advancedConfig.marketSharePercent)
     setFollowRecommendation(config.advancedConfig.followRecommendation)
     setManualQuantityMode(config.advancedConfig.manualQuantityMode)
+    setPinnedCrafts(config.pinnedCrafts ?? [])
     loadedRef.current = true
   }, [])
 
@@ -155,9 +159,9 @@ export default function Food() {
       spects, stationCost, premium, focus, cityBonus, craftQuantity, sellingPrice,
       baseName, baseMaterials, enchantmentMaterials,
       calculationMode, cityData, marketSharePercent, followRecommendation, manualQuantityMode,
-      selectedEnchantment,
+      selectedEnchantment, pinnedCrafts,
     }
-  }, [spects, stationCost, premium, focus, cityBonus, craftQuantity, sellingPrice, baseName, baseMaterials, enchantmentMaterials, calculationMode, cityData, marketSharePercent, followRecommendation, manualQuantityMode, selectedEnchantment])
+  }, [spects, stationCost, premium, focus, cityBonus, craftQuantity, sellingPrice, baseName, baseMaterials, enchantmentMaterials, calculationMode, cityData, marketSharePercent, followRecommendation, manualQuantityMode, selectedEnchantment, pinnedCrafts])
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(searchQuery), 150)
@@ -198,6 +202,7 @@ export default function Food() {
         spects,
         craftingInputs: { stationCost, premium, focus, cityBonus, craftQuantity, sellingPrice, calculationMode },
         advancedConfig: { cities: cityData, marketSharePercent, followRecommendation, manualQuantityMode },
+        pinnedCrafts,
       }
       const existing = loadConfig()
       config.meals = { ...existing.meals }
@@ -208,7 +213,7 @@ export default function Food() {
       saveConfig(config)
     }, 500)
     return () => { if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current) }
-  }, [spects, stationCost, premium, focus, cityBonus, craftQuantity, sellingPrice, calculationMode, cityData, marketSharePercent, followRecommendation, manualQuantityMode, baseName, baseMaterials, enchantmentMaterials, selectedEnchantment, saveEnchantmentDataToConfig])
+  }, [spects, stationCost, premium, focus, cityBonus, craftQuantity, sellingPrice, calculationMode, cityData, marketSharePercent, followRecommendation, manualQuantityMode, baseName, baseMaterials, enchantmentMaterials, selectedEnchantment, saveEnchantmentDataToConfig, pinnedCrafts])
 
   const availableEnchantments = useMemo(() => {
     if (!baseName) return []
@@ -354,11 +359,69 @@ export default function Food() {
     config.spects = spects
     config.craftingInputs = { stationCost, premium, focus, cityBonus, craftQuantity, sellingPrice, calculationMode }
     config.advancedConfig = { cities: cityData, marketSharePercent, followRecommendation, manualQuantityMode }
+    config.pinnedCrafts = pinnedCrafts
     if (baseName) {
       config.meals[baseName] = { ...config.meals[baseName], baseName, baseMaterials, enchantmentMaterials }
       saveEnchantmentDataToConfig(config)
     }
     saveConfig(config)
+  }
+
+  const currentPinId = displayedMeal ? `${getBaseName(displayedMeal.uniqueName)}@${selectedEnchantment}` : null
+  const isCurrentlyPinned = currentPinId ? pinnedCrafts.some(p => p.id === currentPinId) : false
+
+  function handlePinCraft() {
+    if (!displayedMeal || !craftResult || !recipeMeta) return
+    const id = `${getBaseName(displayedMeal.uniqueName)}@${selectedEnchantment}`
+    const newPin: PinnedCraft = {
+      id,
+      mealName: displayedMeal.name,
+      mealIcon: displayedMeal.icon,
+      mealUniqueName: displayedMeal.uniqueName,
+      enchantment: selectedEnchantment,
+      tier: displayedMeal.tier,
+      result: { ...craftResult },
+      materials: displayedMaterials.map(m => ({ ...m })),
+      craftQuantity: parseInt(craftQuantity) || 1,
+      sellingPrice: parseFloat(sellingPrice) || 0,
+      premium,
+      focus,
+      cityBonus,
+      stationCost: parseFloat(stationCost) || 0,
+      recipeMeta: { ...recipeMeta },
+    }
+    setPinnedCrafts(prev => {
+      const existing = prev.findIndex(p => p.id === id)
+      if (existing >= 0) {
+        const updated = [...prev]
+        updated[existing] = newPin
+        return updated
+      }
+      return [...prev, newPin]
+    })
+  }
+
+  function handleUnpinCraft(id: string) {
+    setPinnedCrafts(prev => prev.filter(p => p.id !== id))
+  }
+
+  function handleUpdatePin(id: string) {
+    if (!displayedMeal || !craftResult || !recipeMeta) return
+    setPinnedCrafts(prev => prev.map(p => {
+      if (p.id !== id) return p
+      return {
+        ...p,
+        result: { ...craftResult },
+        materials: displayedMaterials.map(m => ({ ...m })),
+        craftQuantity: parseInt(craftQuantity) || 1,
+        sellingPrice: parseFloat(sellingPrice) || 0,
+        premium,
+        focus,
+        cityBonus,
+        stationCost: parseFloat(stationCost) || 0,
+        recipeMeta: { ...recipeMeta },
+      }
+    }))
   }
 
   useEffect(() => {
@@ -382,6 +445,7 @@ export default function Food() {
         followRecommendation: s.followRecommendation,
         manualQuantityMode: s.manualQuantityMode,
       }
+      config.pinnedCrafts = s.pinnedCrafts
       if (s.baseName) {
         config.meals[s.baseName] = {
           ...config.meals[s.baseName],
@@ -479,12 +543,43 @@ export default function Food() {
                     manualQuantityMode={manualQuantityMode}
                     onManualQuantityModeChange={setManualQuantityMode}
                     onCraftQuantityChange={setCraftQuantity}
+                    onPinCraft={handlePinCraft}
+                    isCurrentlyPinned={isCurrentlyPinned}
                   />
 
-                  <MaterialsSummary materials={displayedMaterials} craftQuantity={parseInt(craftQuantity) || 1} returnRate={returnRate} />
+                  {pinnedCrafts.length > 0 && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {pinnedCrafts.map(craft => (
+                        <PinnedCraftCard
+                          key={craft.id}
+                          craft={craft}
+                          isActive={craft.id === currentPinId}
+                          onUnpin={handleUnpinCraft}
+                          onUpdate={handleUpdatePin}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  <MaterialsSummary materials={displayedMaterials} craftQuantity={parseInt(craftQuantity) || 1} returnRate={returnRate} pinnedCrafts={pinnedCrafts} />
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <>
+                  {pinnedCrafts.length > 0 && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {pinnedCrafts.map(craft => (
+                        <PinnedCraftCard
+                          key={craft.id}
+                          craft={craft}
+                          isActive={craft.id === currentPinId}
+                          onUnpin={handleUnpinCraft}
+                          onUpdate={handleUpdatePin}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="p-5 bg-slate-900/60 border border-slate-800 rounded-2xl">
                     <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">
                       Cantidad a craftear
@@ -522,10 +617,27 @@ export default function Food() {
                       <CraftResultRow label="Profit total" value={craftResult ? fmtSilver(craftResult.profitPerBatch) : '0'} suffix=" silver" highlight={craftResult ? craftResult.profitPerBatch > 0 : false} />
                       <CraftResultRow label="Silver / focus" value={!hasFocusData && focus ? '—' : (craftResult ? fmtSilver(craftResult.silverPerFocus) : '0')} />
                     </div>
+
+                    <div className="mt-4 pt-3 border-t border-slate-800/60">
+                      <button
+                        onClick={handlePinCraft}
+                        className={`w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                          isCurrentlyPinned
+                            ? 'bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 border border-blue-500/30'
+                            : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700'
+                        }`}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                          <path fillRule="evenodd" d="M10 2a.75.75 0 01.75.75v2.5a.75.75 0 01-1.5 0v-2.5A.75.75 0 0110 2zM10 15a.75.75 0 01.75.75v2.5a.75.75 0 01-1.5 0v-2.5A.75.75 0 0110 15zM10 7a3 3 0 100 6 3 3 0 000-6zM15.657 5.404a.75.75 0 10-1.06-1.06l-1.768 1.768a.75.75 0 001.06 1.06l1.768-1.768zM6.464 14.596a.75.75 0 10-1.06-1.06l-1.768 1.768a.75.75 0 001.06 1.06l1.768-1.768zM18 10a.75.75 0 01-.75.75h-2.5a.75.75 0 010-1.5h2.5A.75.75 0 0118 10zM5 10a.75.75 0 01-.75.75h-2.5a.75.75 0 010-1.5h2.5A.75.75 0 015 10zM14.596 15.657a.75.75 0 001.06-1.06l-1.768-1.768a.75.75 0 00-1.06 1.06l1.768 1.768zM5.404 6.464a.75.75 0 001.06-1.06l-1.768-1.768a.75.75 0 10-1.06 1.06l1.768 1.768z" clipRule="evenodd" />
+                        </svg>
+                        {isCurrentlyPinned ? 'Actualizar pin' : 'Pin craft'}
+                      </button>
+                    </div>
                   </div>
 
-                  <MaterialsSummary materials={displayedMaterials} craftQuantity={parseInt(craftQuantity) || 1} returnRate={returnRate} />
+                  <MaterialsSummary materials={displayedMaterials} craftQuantity={parseInt(craftQuantity) || 1} returnRate={returnRate} pinnedCrafts={pinnedCrafts} />
                 </div>
+                </>
               )}
 
               <ConfigPanel
